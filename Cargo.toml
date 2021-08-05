@@ -1,6 +1,6 @@
 [package]
-name = "wayfarer"
-version = "0.2.4"
+name = "pistolhot"
+version = "0.0.1"
 authors = ["joel nises <joel.nises@gmail.com>"]
 edition = "2018"
 

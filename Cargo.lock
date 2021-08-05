@@ -1453,6 +1453,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
+name = "pistolhot"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "cpal",
+ "crossbeam",
+ "eframe",
+ "env_logger",
+ "log",
+ "midir",
+ "parking_lot",
+ "ringbuf",
+ "slice-deque",
+ "wmidi",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1856,24 +1874,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e0c4a743a309662d45f4ede961d7afa4ba4131a59a639f29b0069c3798bbcc2"
-
-[[package]]
-name = "wayfarer"
-version = "0.2.4"
-dependencies = [
- "anyhow",
- "chrono",
- "cpal",
- "crossbeam",
- "eframe",
- "env_logger",
- "log",
- "midir",
- "parking_lot",
- "ringbuf",
- "slice-deque",
- "wmidi",
-]
 
 [[package]]
 name = "wayland-client"

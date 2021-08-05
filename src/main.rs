@@ -17,10 +17,10 @@ mod synth;
 use parking_lot::Mutex;
 use synth::Synth;
 
-const NAME: &str = "Wayfärer";
+const NAME: &str = "Pistolhot";
 const VIS_SIZE: usize = 512;
 
-struct Wayfarer {
+struct Pistolhot {
     audio: AudioManager<Synth>,
     midi: Option<MidiReader>,
     status_text: Arc<Mutex<String>>,
@@ -30,7 +30,7 @@ struct Wayfarer {
     periodic_updater: Option<(Sender<()>, JoinHandle<()>)>,
 }
 
-impl Wayfarer {
+impl Pistolhot {
     fn new() -> Self {
         let (midi_tx, midi_rx) = channel::bounded(256);
         let (midi, initial_status) = match MidiReader::new(midi_tx.clone()) {
@@ -55,7 +55,7 @@ impl Wayfarer {
     }
 }
 
-impl App for Wayfarer {
+impl App for Pistolhot {
     fn name(&self) -> &str {
         NAME
     }
@@ -192,7 +192,7 @@ impl App for Wayfarer {
 
 fn main() {
     env_logger::init();
-    let app = Box::new(Wayfarer::new());
+    let app = Box::new(Pistolhot::new());
     eframe::run_native(app, epi::NativeOptions {
         // has to be disabled to work with cpal
         drag_and_drop_support: false,
