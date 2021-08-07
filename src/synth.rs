@@ -1,7 +1,9 @@
 use std::f32::consts::PI;
 
 use crossbeam::channel;
+use glam::{vec2, vec4};
 use wmidi::MidiMessage;
+use crate::pendulum::Pendulum;
 
 // super simple synth
 // TODO make interesting
@@ -11,9 +13,7 @@ type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 #[derive(Clone)]
 struct NoteEvent {
     note: wmidi::Note,
-    velocity: wmidi::U7,
-    pressed: u64,
-    released: Option<u64>,
+    pendulum: Pendulum,
 }
 
 #[derive(Clone)]
@@ -44,22 +44,28 @@ impl SynthPlayer for Synth {
         for message in self.midi_events.try_iter() {
             match message {
                 wmidi::MidiMessage::NoteOn(_, note, velocity) => {
+                    let displacement = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
+                    / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
+                    * PI / 2. / 2.;
                     self.note_event = Some(NoteEvent {
                         note,
-                        velocity,
-                        pressed: self.clock,
-                        released: None,
+                        pendulum: Pendulum {
+                            m: vec2(1., 1.),
+                            l: 0.01 * vec2(1., 3.) / note.to_freq_f32(),
+                            t_pt: vec4(displacement, displacement, 0., 0.),
+                            ..Pendulum::default()
+                        },
                     });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(NoteEvent {
                         note: held_note,
-                        ref mut released,
                         ..
                     }) = self.note_event
                     {
                         if note == held_note {
-                            *released = Some(self.clock);
+                            // TODO increase friction
+                            self.note_event = None;
                         }
                     }
                 }
@@ -69,30 +75,17 @@ impl SynthPlayer for Synth {
 
         // produce sound
         if let Some(NoteEvent {
-            note,
-            velocity,
-            pressed,
-            released,
-        }) = self.note_event
+            pendulum,
+            ..
+        }) = &mut self.note_event
         {
-            let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
-                / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
-            let freq = note.to_freq_f32();
             for frame in output.chunks_exact_mut(channels) {
-                let time = (self.clock - pressed) as f32 / sample_rate as f32;
-                let mut value = (time * freq * 2f32 * PI).sin();
-                value *= norm_vel;
-                // fade in to avoid pop
-                value *= (time * 1000.).min(1.);
-                // fade out
-                if let Some(released) = released {
-                    let released_time = (self.clock - released) as f32 / sample_rate as f32;
-                    value *= (1. - released_time * 1000.).max(0.);
-                }
-                // TODO also avoid popping when switching between notes
                 for sample in frame.iter_mut() {
-                    *sample = value;
+                    // TODO try the other components
+                    //*sample = (pendulum.t_pt.x / (PI / 2.)).clamp(-1., 1.);
+                    *sample = (pendulum.t_pt.z / pendulum.l.y * 100.).clamp(-1., 1.);
                 }
+                pendulum.update(1. / sample_rate as f32);
                 self.clock += 1;
             }
         } else {

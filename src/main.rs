@@ -16,6 +16,7 @@ use audio::AudioManager;
 mod synth;
 use parking_lot::Mutex;
 use synth::Synth;
+mod pendulum;
 
 const NAME: &str = "Pistolhot";
 const VIS_SIZE: usize = 512;
