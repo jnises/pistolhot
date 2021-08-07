@@ -1,7 +1,7 @@
-# Wayfärer
+# Pistolhot
 
-Midi synth template project written in rust.
+Double pendulum synth
 
 ```
-cargo run
+cargo run --release
 ```
