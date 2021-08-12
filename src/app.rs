@@ -175,6 +175,8 @@ impl App for Pistolhot {
                         egui::plot::Plot::new("waveform")
                             .include_y(-1.)
                             .include_y(1.)
+                            .include_x(0.)
+                            .include_x((VIS_SIZE / 2) as f32)
                             .line(egui::plot::Line::new(egui::plot::Values::from_values_iter(
                                 it.take(VIS_SIZE / 2)
                                     .enumerate()
