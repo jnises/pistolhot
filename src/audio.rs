@@ -8,6 +8,7 @@ use cpal::{
     SupportedStreamConfigRange,
 };
 use crossbeam::atomic::AtomicCell;
+use log::warn;
 
 const NUM_CHANNELS: usize = 2;
 const VISUALIZATION_BUFFER_SIZE: usize = 0x10000;
@@ -128,6 +129,8 @@ where
                     stream.play()?;
                     self.stream = Some(stream);
                 }
+            } else {
+                warn!("no output device found");
             }
             Ok(())
         })();

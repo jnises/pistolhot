@@ -4,19 +4,34 @@ version = "0.0.1"
 authors = ["joel nises <joel.nises@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+# rlib needed for tests
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 eframe = "0.13"
 chrono = "0.4"
-cpal = "0.13"
+cpal = { version = "0.13", features = ["wasm-bindgen"] }
 midir = "0.7"
 wmidi = "4.0"
 crossbeam = "0.8"
 anyhow = "1.0"
 env_logger = "0.9"
 log = "0.4"
-parking_lot = "0.11"
+parking_lot = { version = "0.11", features = ["wasm-bindgen"]}
 ringbuf = "0.2"
-slice-deque = "0.3"
+web-sys = { version = "0.3", features = ["console", "Window"] }
+console_error_panic_hook = "0.1"
 glam = "0.17.3"
+cfg-if = "1.0"
+
+[profile.release]
+# make things smaller
+lto = true
+opt-level = 'z'
+codegen-units = 1
+
+[package.metadata.wasm-pack.profile.release]
+# wasm-opt doesn't seem to work on apple silicon yet
+# wasm-opt = ['-Os']
+wasm-opt = false
