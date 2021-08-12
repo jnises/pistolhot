@@ -12,10 +12,10 @@ use eframe::{
 use parking_lot::Mutex;
 use std::{collections::VecDeque, sync::Arc};
 
-const NAME: &str = "Wayfärer";
+const NAME: &str = "Pistolhot";
 const VIS_SIZE: usize = 512;
 
-pub struct Wayfarer {
+pub struct Pistolhot {
     audio: Option<AudioManager<Synth>>,
     midi: Option<MidiReader>,
     status_text: Arc<Mutex<String>>,
@@ -27,7 +27,7 @@ pub struct Wayfarer {
     periodic_updater: Option<PeriodicUpdater>,
 }
 
-impl Wayfarer {
+impl Pistolhot {
     pub fn new() -> Self {
         let (midi_tx, midi_rx) = channel::bounded(256);
         let (midi, initial_status) = match MidiReader::new(midi_tx.clone()) {
@@ -59,7 +59,7 @@ impl Wayfarer {
     }
 }
 
-impl App for Wayfarer {
+impl App for Pistolhot {
     fn name(&self) -> &str {
         NAME
     }

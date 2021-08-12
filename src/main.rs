@@ -9,17 +9,9 @@ mod synth;
 
 mod pendulum;
 
-
-
-
 mod app;
 use app::Pistolhot;
 
-
-
-
-
-#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     use eframe::{egui::Vec2, epi};
 
