@@ -163,7 +163,7 @@ impl App for Pistolhot {
                     let mut prev = None;
                     let mut it = left_vis_buffer.iter().copied().rev();
                     it.nth(VIS_SIZE / 2 - 1);
-                    while let Some(value) = it.next() {
+                    for value in &mut it {
                         if let Some(prev) = prev {
                             if prev >= 0. && value < 0. {
                                 break;
