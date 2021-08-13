@@ -80,10 +80,11 @@ impl SynthPlayer for Synth {
         }) = &mut self.note_event
         {
             for frame in output.chunks_exact_mut(channels) {
+                // TODO try the other components
+                let a = pendulum.t_pt.z / pendulum.l.y * 100.;
+                let clipped = 2. / std::f32::consts::PI * f32::atan(2. * a);
                 for sample in frame.iter_mut() {
-                    // TODO try the other components
-                    //*sample = (pendulum.t_pt.x / (PI / 2.)).clamp(-1., 1.);
-                    *sample = (pendulum.t_pt.z / pendulum.l.y * 100.).clamp(-1., 1.);
+                    *sample = clipped;
                 }
                 pendulum.update(1. / sample_rate as f32);
                 self.clock += 1;
