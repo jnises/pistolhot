@@ -38,8 +38,8 @@ impl Synth {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
-                distorsion: 1f32.into(),
-                chaoticity: 0.1f32.into(),
+                distorsion: 5.7f32.into(),
+                chaoticity: 0.4f32.into(),
             }),
         }
     }
