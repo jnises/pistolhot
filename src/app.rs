@@ -189,7 +189,7 @@ impl App for Pistolhot {
                                         y: y as f64,
                                     }),
                             )))
-                            .width(ui.available_width().min(200.))
+                            .width(ui.available_width().min(300.))
                             .view_aspect(2.0),
                     );
                     if left_vis_buffer.len() > VIS_SIZE {
