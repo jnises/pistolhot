@@ -201,8 +201,14 @@ impl App for Pistolhot {
                     ui.horizontal(|ui| {
                         ui.label("distorsion:");
                         let mut distorsion = params.distorsion.load();
-                        ui.add(egui::DragValue::new(&mut distorsion).clamp_range(1f32..=10f32));
+                        ui.add(egui::Slider::new(&mut distorsion, 1f32..=10f32));
                         params.distorsion.store(distorsion);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("chaoticity:");
+                        let mut chaoticity = params.chaoticity.load();
+                        ui.add(egui::Slider::new(&mut chaoticity, 0.05f32..=0.8f32));
+                        params.chaoticity.store(chaoticity);                        
                     });
                 });
                 // put onscreen keyboard at bottom of window

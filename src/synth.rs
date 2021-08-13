@@ -1,9 +1,9 @@
 use std::{f32::consts::PI, sync::Arc};
 
+use crate::pendulum::Pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4};
 use wmidi::MidiMessage;
-use crate::pendulum::Pendulum;
 
 // super simple synth
 // TODO make interesting
@@ -19,6 +19,7 @@ struct NoteEvent {
 // TODO handle params using messages instead?
 pub struct Params {
     pub distorsion: AtomicCell<f32>,
+    pub chaoticity: AtomicCell<f32>,
 }
 
 #[derive(Clone)]
@@ -36,7 +37,10 @@ impl Synth {
             clock: 0,
             midi_events,
             note_event: None,
-            params: Arc::new(Params{ distorsion: 1f32.into() }),
+            params: Arc::new(Params {
+                distorsion: 1f32.into(),
+                chaoticity: 0.1f32.into(),
+            }),
         }
     }
 
@@ -51,27 +55,38 @@ pub trait SynthPlayer {
 
 impl SynthPlayer for Synth {
     fn play(&mut self, sample_rate: u32, channels: usize, output: &mut [f32]) {
+        let chaoticity = self.params.chaoticity.load().clamp(0f32, 1f32);
         // pump midi messages
         for message in self.midi_events.try_iter() {
             match message {
                 wmidi::MidiMessage::NoteOn(_, note, velocity) => {
                     let displacement = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
-                    / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
-                    * PI / 2. / 2.;
+                        / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
+                        * PI
+                        / 2.
+                        / 2.;
+                    let g = 9.81f32;
+                    // TODO calculate length better. do a few components of the large amplitude equation
+                    let length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
+                    let m = vec2(1., 1.);
+                    let cm = (m.x - m.y) / m.y;
+                    let b = length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
+                    let c = chaoticity * b / (1f32 - chaoticity);
+                    let lengths = vec2(b, c);
                     self.note_event = Some(NoteEvent {
                         note,
                         pendulum: Pendulum {
                             m: vec2(1., 1.),
-                            l: 0.01 * vec2(1., 3.) / note.to_freq_f32(),
+                            l: lengths,
                             t_pt: vec4(displacement, displacement, 0., 0.),
+                            g,
                             ..Pendulum::default()
                         },
                     });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(NoteEvent {
-                        note: held_note,
-                        ..
+                        note: held_note, ..
                     }) = self.note_event
                     {
                         if note == held_note {
@@ -85,11 +100,7 @@ impl SynthPlayer for Synth {
         }
 
         // produce sound
-        if let Some(NoteEvent {
-            pendulum,
-            ..
-        }) = &mut self.note_event
-        {
+        if let Some(NoteEvent { pendulum, .. }) = &mut self.note_event {
             let distorsion = self.params.distorsion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
