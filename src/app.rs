@@ -1,4 +1,4 @@
-use crate::audio::AudioManager;
+use crate::{audio::AudioManager, synth::Params};
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
@@ -24,6 +24,7 @@ pub struct Pistolhot {
     forced_buffer_size: Option<u32>,
     left_vis_buffer: VecDeque<f32>,
     synth: Option<Synth>,
+    synth_params: Arc<Params>,
     periodic_updater: Option<PeriodicUpdater>,
 }
 
@@ -35,6 +36,7 @@ impl Pistolhot {
             Err(e) => (None, format!("error initializaing midi: {}", e)),
         };
         let mut synth = Some(Synth::new(midi_rx));
+        let synth_params = synth.as_ref().unwrap().get_params();
         let status_text = Arc::new(Mutex::new(initial_status));
         // can't init audio here for wasm since that gets blocked by chrome's autoplay check
         let audio = if cfg!(target_arch = "wasm32") {
@@ -54,6 +56,7 @@ impl Pistolhot {
             forced_buffer_size: None,
             left_vis_buffer: VecDeque::with_capacity(VIS_SIZE * 2),
             synth,
+            synth_params,
             periodic_updater: None,
         }
     }
@@ -91,6 +94,7 @@ impl App for Pistolhot {
                 let forced_buffer_size = &mut self.forced_buffer_size;
                 let status_text = &self.status_text;
                 let keyboard = &mut self.keyboard;
+                let params = self.synth_params.as_ref();
                 ui.group(|ui| {
                     ui.horizontal(|ui| {
                         ui.label("midi:");
@@ -192,6 +196,14 @@ impl App for Pistolhot {
                         drop(left_vis_buffer.drain(0..left_vis_buffer.len() - VIS_SIZE));
                     }
                     ui.label(&*status_text.lock());
+                });
+                ui.group(|ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("distorsion:");
+                        let mut distorsion = params.distorsion.load();
+                        ui.add(egui::DragValue::new(&mut distorsion).clamp_range(1f32..=10f32));
+                        params.distorsion.store(distorsion);
+                    });
                 });
                 // put onscreen keyboard at bottom of window
                 let height = ui.available_size().y;

@@ -1,6 +1,6 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, sync::Arc};
 
-use crossbeam::channel;
+use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4};
 use wmidi::MidiMessage;
 use crate::pendulum::Pendulum;
@@ -16,12 +16,18 @@ struct NoteEvent {
     pendulum: Pendulum,
 }
 
+// TODO handle params using messages instead?
+pub struct Params {
+    pub distorsion: AtomicCell<f32>,
+}
+
 #[derive(Clone)]
 pub struct Synth {
     clock: u64,
     midi_events: MidiChannel,
 
     note_event: Option<NoteEvent>,
+    params: Arc<Params>,
 }
 
 impl Synth {
@@ -30,7 +36,12 @@ impl Synth {
             clock: 0,
             midi_events,
             note_event: None,
+            params: Arc::new(Params{ distorsion: 1f32.into() }),
         }
+    }
+
+    pub fn get_params(&self) -> Arc<Params> {
+        self.params.clone()
     }
 }
 
@@ -79,10 +90,11 @@ impl SynthPlayer for Synth {
             ..
         }) = &mut self.note_event
         {
+            let distorsion = self.params.distorsion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
                 let a = pendulum.t_pt.z / pendulum.l.y * 100.;
-                let clipped = 2. / std::f32::consts::PI * f32::atan(2. * a);
+                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * a);
                 for sample in frame.iter_mut() {
                     *sample = clipped;
                 }
