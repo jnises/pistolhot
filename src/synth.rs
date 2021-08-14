@@ -14,6 +14,7 @@ type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 struct NoteEvent {
     note: wmidi::Note,
     pendulum: Pendulum,
+    lowpass: f32,
 }
 
 // TODO handle params using messages instead?
@@ -27,7 +28,6 @@ pub struct Synth {
     midi_events: MidiChannel,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
-    lowpass: f32,
 }
 
 impl Synth {
@@ -36,10 +36,9 @@ impl Synth {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
-                distorsion: 5.7f32.into(),
-                chaoticity: 0.4f32.into(),
+                distorsion: 2f32.into(),
+                chaoticity: 0.67f32.into(),
             }),
-            lowpass: 0f32,
         }
     }
 
@@ -81,6 +80,7 @@ impl SynthPlayer for Synth {
                             g,
                             ..Pendulum::default()
                         },
+                        lowpass: 0f32,
                     });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
@@ -99,15 +99,18 @@ impl SynthPlayer for Synth {
         }
 
         // produce sound
-        if let Some(NoteEvent { pendulum, .. }) = &mut self.note_event {
+        if let Some(NoteEvent { pendulum, lowpass, .. }) = &mut self.note_event {
             let distorsion = self.params.distorsion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
-                let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
+                //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
+                //let a = pendulum.t_pt.x + pendulum.t_pt.y;
+                let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
+                //let a = pendulum.t_pt.y;
                 // TODO do a better hipass
                 let cutoff = 0.0001f32;
-                self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
-                let hipass_a = a - self.lowpass;
+                *lowpass = a * cutoff + (1f32 - cutoff) * *lowpass;
+                let hipass_a = a - *lowpass;
                 let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
                 for sample in frame.iter_mut() {
                     *sample = clipped;

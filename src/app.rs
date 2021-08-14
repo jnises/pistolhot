@@ -207,7 +207,7 @@ impl App for Pistolhot {
                     ui.horizontal(|ui| {
                         ui.label("chaoticity:");
                         let mut chaoticity = params.chaoticity.load();
-                        ui.add(egui::Slider::new(&mut chaoticity, 0.05f32..=0.8f32));
+                        ui.add(egui::Slider::new(&mut chaoticity, 0.0001f32..=0.999f32));
                         params.chaoticity.store(chaoticity);                        
                     });
                 });

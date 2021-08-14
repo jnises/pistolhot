@@ -52,7 +52,7 @@ impl Pendulum {
                         / (length.x * length.y * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
                     let c1 = (length.y.powi(2) * mass.y * pt.x.powi(2)
                         + length.x.powi(2) * (mass.x + mass.y) * pt.y.powi(2)
-                        - 2. * length.x * length.y * mass.y * pt.x * pt.y * f32::cos(theta.x - theta.y))
+                        - length.x * length.y * mass.y * pt.x * pt.y * f32::cos(theta.x - theta.y))
                         / (2.
                             * length.x.powi(2)
                             * length.y.powi(2)
