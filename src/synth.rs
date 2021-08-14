@@ -27,6 +27,7 @@ pub struct Synth {
     midi_events: MidiChannel,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
+    lowpass: f32,
 }
 
 impl Synth {
@@ -38,6 +39,7 @@ impl Synth {
                 distorsion: 5.7f32.into(),
                 chaoticity: 0.4f32.into(),
             }),
+            lowpass: 0f32,
         }
     }
 
@@ -101,8 +103,12 @@ impl SynthPlayer for Synth {
             let distorsion = self.params.distorsion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
-                let a = pendulum.t_pt.z / pendulum.l.y * 100.;
-                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * a);
+                let a = pendulum.t_pt.z / pendulum.l.y.max(0.000001f32) * 100.;
+                // TODO do a better hipass
+                let cutoff = 0.0001f32;
+                self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
+                let hipass_a = a - self.lowpass;
+                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
                 for sample in frame.iter_mut() {
                     *sample = clipped;
                 }
