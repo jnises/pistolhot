@@ -24,9 +24,7 @@ pub struct Params {
 
 #[derive(Clone)]
 pub struct Synth {
-    clock: u64,
     midi_events: MidiChannel,
-
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
 }
@@ -34,7 +32,6 @@ pub struct Synth {
 impl Synth {
     pub fn new(midi_events: MidiChannel) -> Self {
         Self {
-            clock: 0,
             midi_events,
             note_event: None,
             params: Arc::new(Params {
@@ -110,11 +107,9 @@ impl SynthPlayer for Synth {
                     *sample = clipped;
                 }
                 pendulum.update(1. / sample_rate as f32);
-                self.clock += 1;
             }
         } else {
             output.fill(0f32);
-            self.clock += (output.len() / channels) as u64;
         }
     }
 }
