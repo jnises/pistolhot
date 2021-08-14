@@ -105,8 +105,10 @@ impl SynthPlayer for Synth {
                 // TODO try the other components
                 //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
                 //let a = pendulum.t_pt.x + pendulum.t_pt.y;
-                let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
+                //let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
                 //let a = pendulum.t_pt.y;
+                //let a = pendulum.t_pt.z * 100000000.;
+                let a = pendulum.t_pt.w * 100000000.;
                 // TODO do a better hipass
                 let cutoff = 0.0001f32;
                 *lowpass = a * cutoff + (1f32 - cutoff) * *lowpass;
