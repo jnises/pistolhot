@@ -75,7 +75,7 @@ impl SynthPlayer for Synth {
                     self.note_event = Some(NoteEvent {
                         note,
                         pendulum: Pendulum {
-                            m: vec2(1., 1.),
+                            mass: vec2(1., 1.),
                             length,
                             t_pt: vec4(displacement, displacement, 0., 0.),
                             g,
