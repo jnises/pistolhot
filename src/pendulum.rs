@@ -7,7 +7,7 @@ pub struct Pendulum {
     // the mass of the pendulums
     pub m: Vec2,
     // the length of the pendulums
-    pub l: Vec2,
+    pub length: Vec2,
     // simulation state (theta0, theta1, ...)
     pub t_pt: Vec4,
     pub time_error: f32,
@@ -19,7 +19,7 @@ impl Default for Pendulum {
             g: 9.81,
             step_size: 1.0 / 44100.0,
             m: vec2(1f32, 1f32),
-            l: vec2(1f32, 1f32),
+            length: vec2(1f32, 1f32),
             t_pt: vec4(0., 0., 0., 0.),
             time_error: 0.,
         }
@@ -31,7 +31,7 @@ impl Pendulum {
         let Self {
             ref g,
             ref step_size,
-            ref l,
+            ref length,
             ref m,
             t_pt,
             time_error,
@@ -44,22 +44,22 @@ impl Pendulum {
                 let f = |t_pt: &Vec4| {
                     let theta: (f32, f32) = t_pt.xy().into();
                     let pt: (f32, f32) = t_pt.zw().into();
-                    let dt0 = (l.y * pt.0 - l.x * pt.1 * f32::cos(theta.0 - theta.1))
-                        / (l.x.powi(2) * l.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
-                    let dt1 = (l.x * (m.x + m.y) * pt.1 - l.y * m.y * pt.0 * f32::cos(theta.0 - theta.1))
-                        / (l.x * l.y.powi(2) * m.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
+                    let dt0 = (length.y * pt.0 - length.x * pt.1 * f32::cos(theta.0 - theta.1))
+                        / (length.x.powi(2) * length.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
+                    let dt1 = (length.x * (m.x + m.y) * pt.1 - length.y * m.y * pt.0 * f32::cos(theta.0 - theta.1))
+                        / (length.x * length.y.powi(2) * m.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
                     let c0 = pt.0 * pt.1 * f32::sin(theta.0 - theta.1)
-                        / (l.x * l.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
-                    let c1 = (l.y.powi(2) * m.y * pt.0.powi(2)
-                        + l.x.powi(2) * (m.x + m.y) * pt.1.powi(2)
-                        - l.x * l.y * m.y * pt.0 * pt.1 * f32::cos(theta.0 - theta.1))
+                        / (length.x * length.y * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)));
+                    let c1 = (length.y.powi(2) * m.y * pt.0.powi(2)
+                        + length.x.powi(2) * (m.x + m.y) * pt.1.powi(2)
+                        - length.x * length.y * m.y * pt.0 * pt.1 * f32::cos(theta.0 - theta.1))
                         / (2.
-                            * l.x.powi(2)
-                            * l.y.powi(2)
+                            * length.x.powi(2)
+                            * length.y.powi(2)
                             * (m.x + m.y * f32::sin(theta.0 - theta.1).powi(2)).powi(2))
                         * f32::sin(2. * (theta.0 - theta.1));
-                    let dp0 = -(m.x + m.y) * g * l.x * f32::sin(theta.0) - c0 + c1;
-                    let dp1 = -m.y * g * l.y * f32::sin(theta.1) + c0 - c1;
+                    let dp0 = -(m.x + m.y) * g * length.x * f32::sin(theta.0) - c0 + c1;
+                    let dp1 = -m.y * g * length.y * f32::sin(theta.1) + c0 - c1;
                     // TODO add friction
                     vec4(dt0, dt1, dp0, dp1)
                 };

@@ -71,12 +71,12 @@ impl SynthPlayer for Synth {
                     let cm = (m.x - m.y) / m.y;
                     let b = length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
                     let c = chaoticity * b / (1f32 - chaoticity);
-                    let lengths = vec2(b, c);
+                    let length = vec2(b, c);
                     self.note_event = Some(NoteEvent {
                         note,
                         pendulum: Pendulum {
                             m: vec2(1., 1.),
-                            l: lengths,
+                            length,
                             t_pt: vec4(displacement, displacement, 0., 0.),
                             g,
                             ..Pendulum::default()
@@ -103,7 +103,7 @@ impl SynthPlayer for Synth {
             let distorsion = self.params.distorsion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
-                let a = pendulum.t_pt.z / pendulum.l.y.max(0.000001f32) * 100.;
+                let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
                 // TODO do a better hipass
                 let cutoff = 0.0001f32;
                 self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
