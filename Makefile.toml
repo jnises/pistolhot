@@ -46,3 +46,9 @@ cp pkg/app_bg.wasm web/
 cp pkg/app.js web/
 '''
 dependencies = ["copy_web_src"]
+
+# separate wasm-opt task since wasm-pack can't currently do wasm-opt on an M1 mac
+[tasks.build_web_release_optimized]
+command = "wasm-opt"
+args = ["pkg/app_bg.wasm", "-Os", "--fast-math", "-o", "web/app_bg.wasm"]
+dependencies = ["build_web_release"]
