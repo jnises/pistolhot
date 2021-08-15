@@ -13,6 +13,7 @@ mod midi;
 mod synth;
 mod periodic_updater;
 mod pendulum;
+mod timer;
 
 mod app;
 pub use app::Pistolhot;

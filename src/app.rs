@@ -18,7 +18,7 @@ const VIS_SIZE: usize = 512;
 
 pub struct Data {
     audio: AudioManager<Synth>,
-    midi: Option<MidiReader>,
+    midi: Arc<MidiReader>,
     status_text: Arc<Mutex<String>>,
     status_clone: Arc<Mutex<String>>,
     keyboard: OnScreenKeyboard,
@@ -37,17 +37,10 @@ pub enum Pistolhot {
 impl Pistolhot {
     fn init(&mut self) {
         let (midi_tx, midi_rx) = channel::bounded(256);
-        let (midi, initial_status) = match MidiReader::new(midi_tx.clone()) {
-            Ok(midi) => (Some(midi), String::new()),
-            Err(e) => {
-                let msg = format!("error initializaing midi: {}", e);
-                warn!("{}", msg);
-                (None, msg)
-            }
-        };
+        let midi = MidiReader::new(midi_tx.clone());
         let mut synth = Some(Synth::new(midi_rx));
         let synth_params = synth.as_ref().unwrap().get_params();
-        let status_text = Arc::new(Mutex::new(initial_status));
+        let status_text = Arc::new(Mutex::new("".to_string()));
         let status_clone = status_text.clone();
         let audio = AudioManager::new(synth.take().unwrap(), move |e| {
             *status_clone.lock() = e;
@@ -116,7 +109,7 @@ impl App for Pistolhot {
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
                             ui.label("midi:");
-                            ui.label(midi.as_ref().map(|midi| midi.get_name()).unwrap_or("-"));
+                            ui.label(midi.get_name());
                         });
                     });
 
