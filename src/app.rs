@@ -210,10 +210,10 @@ impl App for Pistolhot {
                     });
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
-                            ui.label("distorsion:");
-                            let mut distorsion = params.distorsion.load();
+                            ui.label("distortion:");
+                            let mut distorsion = params.distortion.load();
                             ui.add(egui::Slider::new(&mut distorsion, 1f32..=10f32));
-                            params.distorsion.store(distorsion);
+                            params.distortion.store(distorsion);
                         });
                         ui.horizontal(|ui| {
                             ui.label("chaoticity:");

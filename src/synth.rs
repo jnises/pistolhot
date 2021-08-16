@@ -19,7 +19,7 @@ struct NoteEvent {
 
 // TODO handle params using messages instead?
 pub struct Params {
-    pub distorsion: AtomicCell<f32>,
+    pub distortion: AtomicCell<f32>,
     pub chaoticity: AtomicCell<f32>,
 }
 
@@ -36,7 +36,7 @@ impl Synth {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
-                distorsion: 2f32.into(),
+                distortion: 2f32.into(),
                 chaoticity: 0.67f32.into(),
             }),
         }
@@ -100,7 +100,7 @@ impl SynthPlayer for Synth {
 
         // produce sound
         if let Some(NoteEvent { pendulum, lowpass, .. }) = &mut self.note_event {
-            let distorsion = self.params.distorsion.load();
+            let distorsion = self.params.distortion.load();
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
                 //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
