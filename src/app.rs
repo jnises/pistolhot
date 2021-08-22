@@ -1,3 +1,4 @@
+
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
@@ -38,6 +39,7 @@ impl Pistolhot {
     fn init(&mut self) {
         let (midi_tx, midi_rx) = channel::bounded(256);
         let midi = MidiReader::new(midi_tx.clone());
+
         let mut synth = Some(Synth::new(midi_rx));
         let synth_params = synth.as_ref().unwrap().get_params();
         let status_text = Arc::new(Mutex::new("".to_string()));

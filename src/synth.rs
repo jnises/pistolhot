@@ -23,9 +23,12 @@ pub struct Params {
     pub chaoticity: AtomicCell<f32>,
 }
 
+
 #[derive(Clone)]
 pub struct Synth {
+
     midi_events: MidiChannel,
+
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
 }
@@ -33,6 +36,7 @@ pub struct Synth {
 impl Synth {
     pub fn new(midi_events: MidiChannel) -> Self {
         Self {
+
             midi_events,
             note_event: None,
             params: Arc::new(Params {
@@ -102,6 +106,8 @@ impl SynthPlayer for Synth {
         // produce sound
         if let Some(NoteEvent { pendulum, lowpass, .. }) = &mut self.note_event {
             let distorsion = self.params.distortion.load();
+
+
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
                 //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
@@ -129,6 +135,7 @@ impl SynthPlayer for Synth {
             }
         } else {
             output.fill(0f32);
+
         }
     }
 }

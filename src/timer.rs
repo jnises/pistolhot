@@ -23,7 +23,7 @@ cfg_if::cfg_if! {
                     rcfclone.borrow_mut().take();
                 }) as Box<dyn Fn()>);
                 *rcf.borrow_mut() = Some(f);
-                win.set_timeout_with_callback_and_timeout_and_arguments_0(rcf.borrow().as_ref().unwrap().as_ref().unchecked_ref(), 100).unwrap();
+                win.set_timeout_with_callback_and_timeout_and_arguments_0(rcf.borrow().as_ref().unwrap().as_ref().unchecked_ref(), delay.num_milliseconds() as i32).unwrap();
             }
         }
     } else {
