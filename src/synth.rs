@@ -2,7 +2,7 @@ use std::{f32::consts::PI, sync::Arc};
 
 use crate::pendulum::Pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
-use glam::{vec2, vec4};
+use glam::{Vec2, vec2, vec4};
 use wmidi::MidiMessage;
 
 // super simple synth
@@ -61,9 +61,9 @@ impl SynthPlayer for Synth {
                     let displacement = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
                         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
                         * PI
-                        / 2.
+                        // / 2.
                         / 2.;
-                    let g = 9.81f32;
+                    let g = 9.81f32 * 100000.;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     let length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     let m = vec2(1., 1.);
@@ -71,6 +71,7 @@ impl SynthPlayer for Synth {
                     let b = length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
                     let c = chaoticity * b / (1f32 - chaoticity);
                     let length = vec2(b, c);
+                    dbg!(length);
                     self.note_event = Some(NoteEvent {
                         note,
                         pendulum: Pendulum {
@@ -105,10 +106,17 @@ impl SynthPlayer for Synth {
                 // TODO try the other components
                 //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
                 //let a = pendulum.t_pt.x + pendulum.t_pt.y;
-                let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
+                //let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
                 //let a = pendulum.t_pt.y;
                 //let a = pendulum.t_pt.z * 100000000.;
                 // let a = pendulum.t_pt.w * 100000000.;
+                let tip = Vec2::from(pendulum.t_pt.x.sin_cos()) * pendulum.length.x + Vec2::from(pendulum.t_pt.y.sin_cos()) * pendulum.length.y;
+                //let a = f32::atan2(tip.x, tip.y);
+                //dbg!(tip);
+                //dbg!(pendulum.length);
+                let full_length = pendulum.length.x + pendulum.length.y;
+                let a = (tip.length() / full_length) * 2. - 1.;
+                //dbg!(a);
                 // TODO do a better hipass
                 let cutoff = 0.0001f32;
                 *lowpass = a * cutoff + (1f32 - cutoff) * *lowpass;

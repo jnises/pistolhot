@@ -27,9 +27,10 @@ cfg-if = "1.0"
 
 [profile.release]
 # make things smaller
-lto = true
-opt-level = 'z'
-codegen-units = 1
+#lto = true
+#opt-level = 'z'
+#codegen-units = 1
+opt-level = 2
 
 [package.metadata.wasm-pack.profile.release]
 # wasm-opt doesn't seem to work on apple silicon yet
