@@ -75,7 +75,7 @@ impl SynthPlayer for Synth {
                     let b = length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
                     let c = chaoticity * b / (1f32 - chaoticity);
                     let length = vec2(b, c);
-                    dbg!(length);
+                    //dbg!(length);
                     self.note_event = Some(NoteEvent {
                         note,
                         pendulum: Pendulum {
