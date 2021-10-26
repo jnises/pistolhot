@@ -2,14 +2,14 @@
 name = "pistolhot"
 version = "0.0.1"
 authors = ["joel nises <joel.nises@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 # rlib needed for tests
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-eframe = "0.14"
+eframe = "0.15"
 chrono = "0.4"
 cpal = { version = "0.13", features = ["wasm-bindgen"] }
 midir = "0.7"
@@ -22,7 +22,7 @@ parking_lot = { version = "0.11", features = ["wasm-bindgen"]}
 ringbuf = "0.2"
 web-sys = { version = "0.3", features = ["console", "Window"] }
 console_error_panic_hook = "0.1"
-glam = "0.17.3"
+glam = "0.19"
 cfg-if = "1.0"
 
 [profile.release]
