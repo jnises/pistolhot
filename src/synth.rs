@@ -67,6 +67,7 @@ impl SynthPlayer for Synth {
                         * PI
                         // / 2.
                         / 2.;
+                    // higher gravity. for better precision
                     let g = 9.81f32 * 100000.;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     let length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
@@ -121,7 +122,8 @@ impl SynthPlayer for Synth {
                 //dbg!(tip);
                 //dbg!(pendulum.length);
                 let full_length = pendulum.length.x + pendulum.length.y;
-                let a = (tip.length() / full_length) * 2. - 1.;
+                //let a = (tip.length() / full_length) * 2. - 1.;
+                let a = tip.x / full_length;
                 //dbg!(a);
                 // TODO do a better hipass
                 let cutoff = 0.0001f32;
