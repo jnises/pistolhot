@@ -1,4 +1,3 @@
-
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
@@ -7,7 +6,7 @@ use crate::{audio::AudioManager, synth::Params};
 use cpal::traits::DeviceTrait;
 use crossbeam::channel;
 use eframe::{
-    egui::{self, vec2, Color32, emath, Rect, epaint, pos2, Stroke},
+    egui::{self, emath, epaint, pos2, vec2, Color32, Rect, Stroke},
     epi::{self, App},
 };
 use log::warn;
