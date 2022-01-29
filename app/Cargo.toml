@@ -1,0 +1,25 @@
+[package]
+authors = ["joel nises <joel.nises@gmail.com>"]
+edition = "2021"
+name = "app"
+version = "0.0.1"
+
+[dependencies]
+synth = { path = "../synth" }
+anyhow = "1.0"
+cfg-if = "1.0"
+chrono = "0.4"
+cpal = {version = "0.13", features = ["wasm-bindgen"]}
+crossbeam = "0.8"
+eframe = "0.16"
+log = "0.4"
+midir = "0.7"
+parking_lot = {version = "0.12"}
+ringbuf = "0.2"
+wmidi = "4.0"
+web-sys = {version = "0.3", features = ["console", "Window"]}
+
+[profile.release]
+lto = true
+opt-level = 2
+

@@ -1,12 +1,9 @@
+mod pendulum;
+use pendulum::Pendulum;
 use std::{f32::consts::PI, sync::Arc};
-
-use crate::pendulum::Pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{Vec2, vec2, vec4};
 use wmidi::MidiMessage;
-
-// super simple synth
-// TODO make interesting
 
 type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 

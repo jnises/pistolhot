@@ -1,0 +1,10 @@
+[package]
+authors = ["joel nises <joel.nises@gmail.com>"]
+edition = "2021"
+name = "synth"
+version = "0.0.1"
+
+[dependencies]
+crossbeam = "0.8"
+glam = "0.20"
+wmidi = "4.0"

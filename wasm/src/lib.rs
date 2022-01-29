@@ -6,17 +6,7 @@ if #[cfg(target_arch = "wasm32")] {
 
 use log::{warn, Level, Metadata, Record};
 use web_sys::console;
-
-mod audio;
-mod keyboard;
-mod midi;
-mod synth;
-mod periodic_updater;
-mod pendulum;
-mod timer;
-
-mod app;
-pub use app::Pistolhot;
+use app::Pistolhot;
 
 struct WebLogger;
 // isn't there a ready made crate for this functionality somewhere

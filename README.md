@@ -6,11 +6,13 @@ Double pendulum synth
 
 ## To build and run natively:
 ```
+cd standalone
 cargo run --release
 ```
 
 ## To build wasm version for web.
 ```
+cd wasm
 cargo install cargo-make
 
 # option 1

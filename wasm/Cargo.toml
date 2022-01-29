@@ -9,6 +9,7 @@ version = "0.0.1"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+app = { path = "../app" }
 anyhow = "1.0"
 cfg-if = "1.0"
 chrono = "0.4"

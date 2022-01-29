@@ -1,7 +1,12 @@
+mod keyboard;
+mod midi;
+mod periodic_updater;
+mod audio;
+mod timer;
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
-use crate::synth::Synth;
+use synth::{self, Synth};
 use crate::{audio::AudioManager, synth::Params};
 use cpal::traits::DeviceTrait;
 use crossbeam::channel;

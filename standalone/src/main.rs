@@ -1,15 +1,5 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
-mod audio;
-mod keyboard;
-
-mod midi;
-mod periodic_updater;
-mod synth;
-mod timer;
-mod pendulum;
-
-mod app;
 use app::Pistolhot;
 
 

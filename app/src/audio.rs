@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::synth::SynthPlayer;
+use synth::SynthPlayer;
 use anyhow::{anyhow, Result};
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},

@@ -1,0 +1,15 @@
+[package]
+authors = ["joel nises <joel.nises@gmail.com>"]
+edition = "2021"
+name = "pistolhot"
+version = "0.0.1"
+
+[dependencies]
+eframe = "0.16"
+env_logger = "0.9"
+app = { path = "../app" }
+
+[profile.release]
+lto = true
+opt-level = 2
+
