@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crossbeam::atomic::AtomicCell;
 use synth::SynthPlayer;
 use vst::{
     plugin::{Category, HostCallback, Info, Plugin},
@@ -132,22 +133,30 @@ struct Params {
 
 impl Params {
     const NUM_PARAMS: i32 = 2;
+
+    fn param_ref(&self, index: i32) -> &AtomicCell<f32> {
+        match index {
+            0 => &self.params.chaoticity,
+            1 => &self.params.distortion,
+            _ => panic!("unknown param"),
+        }
+    }
 }
 
 impl vst::plugin::PluginParameters for Params {
     fn get_parameter(&self, index: i32) -> f32 {
-        match index {
-            0 => self.params.chaoticity.load(),
-            1 => self.params.distortion.load(),
-            _ => 0f32,
-        }
+        self.param_ref(index).load()
     }
 
     fn set_parameter(&self, index: i32, value: f32) {
+        self.param_ref(index).store(value)
+    }
+
+    fn get_parameter_name(&self, index: i32) -> String {
         match index {
-            0 => self.params.chaoticity.store(value),
-            1 => self.params.distortion.store(value),
-            _ => {}
+            0 => "chaoticity".to_string(),
+            1 => "distorsion".to_string(),
+            _ => "".to_string(),
         }
     }
 }
