@@ -5,7 +5,7 @@ use crossbeam::{atomic::AtomicCell, channel};
 use glam::{Vec2, vec2, vec4};
 use wmidi::MidiMessage;
 
-type MidiChannel = channel::Receiver<MidiMessage<'static>>;
+pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 
 #[derive(Clone)]
 struct NoteEvent {
