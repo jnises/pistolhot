@@ -3,7 +3,6 @@ use vst::{
     plugin::{Category, HostCallback, Info, Plugin},
     plugin_main,
 };
-use log::error;
 
 struct Data {
     sample_rate: u32,

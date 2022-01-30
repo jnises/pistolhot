@@ -3,7 +3,7 @@ description = "Build debug"
 command = "cargo"
 args = ["build", "--target", "x86_64-apple-darwin"]
 
-[tasks.bundle_debug]
+[tasks.mac_bundle_debug]
 description = "Make macos bundle"
 script = '''
 NAME=pistolhot

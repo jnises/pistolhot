@@ -25,3 +25,11 @@ cargo make serve
 ```
  
 The open a browser (with webmidi support) and point it to http://localhost:8000
+
+## To build vst
+```
+cd vst
+# on windows
+cargo build
+# on mac
+cargo make mac_bundle_debug
