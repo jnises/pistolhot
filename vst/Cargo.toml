@@ -1,0 +1,26 @@
+[package]
+authors = ["joel nises <joel.nises@gmail.com>"]
+edition = "2021"
+name = "pistolhot"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+backtrace = "0.3.64"
+crossbeam = "0.8.1"
+dirs = "4.0.0"
+env_logger = "0.9.0"
+flexi_logger = "0.22.2"
+log = "0.4.14"
+log-panics = "2.0.0"
+msgbox = "0.6.1"
+synth = { path = "../synth" }
+vst = "0.2.1"
+wmidi = "4.0.6"
+
+[profile.release]
+lto = true
+opt-level = 2
+
