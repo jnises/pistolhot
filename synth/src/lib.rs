@@ -101,7 +101,7 @@ impl SynthPlayer for Synth {
 
         // produce sound
         // TODO do a better hipass
-        let cutoff = 0.000001f32;
+        let cutoff = 0.1f32;
         let pendulum = &mut self.pendulum;
         for frame in output.chunks_exact_mut(channels) {
             // TODO try the other components
@@ -121,9 +121,10 @@ impl SynthPlayer for Synth {
             let a = tip.x / full_length;
             //dbg!(a);
             self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
-            let hipass_a = a - self.lowpass;
+            //let hipass_a = a - self.lowpass;
             //let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
-            let clipped = hipass_a.clamp(-1f32, 1f32);
+            //let clipped = hipass_a.clamp(-1f32, 1f32);
+            let clipped = self.lowpass.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
