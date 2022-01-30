@@ -1,6 +1,6 @@
 mod pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
-use glam::{vec2, vec4, Vec2};
+use glam::{vec2, vec4, Vec2, Vec4};
 use pendulum::Pendulum;
 use std::{f32::consts::PI, sync::Arc};
 use wmidi::MidiMessage;
@@ -10,11 +10,11 @@ pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 #[derive(Clone)]
 struct NoteEvent {
     note: wmidi::Note,
-    pendulum: Pendulum,
 }
 
 // TODO handle params using messages instead?
 pub struct Params {
+    // TODO remove this
     pub distortion: AtomicCell<f32>,
     pub chaoticity: AtomicCell<f32>,
 }
@@ -23,6 +23,7 @@ pub struct Params {
 pub struct Synth {
     midi_events: MidiChannel,
 
+    pendulum: Pendulum,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
     lowpass: f32,
@@ -38,6 +39,12 @@ impl Synth {
                 chaoticity: 0.67f32.into(),
             }),
             lowpass: 0f32,
+            pendulum: Pendulum{
+                // higher gravity. for better precision
+                g: 9.81f32 * 100000.,
+                mass: vec2(1., 1.),
+                ..Pendulum::default()
+            },
         }
     }
 
@@ -62,8 +69,7 @@ impl SynthPlayer for Synth {
                         * PI
                         // / 2.
                         / 2.;
-                    // higher gravity. for better precision
-                    let g = 9.81f32 * 100000.;
+                    let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     let length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     let m = vec2(1., 1.);
@@ -72,16 +78,8 @@ impl SynthPlayer for Synth {
                     let c = chaoticity * b / (1f32 - chaoticity);
                     let length = vec2(b, c);
                     //dbg!(length);
-                    self.note_event = Some(NoteEvent {
-                        note,
-                        pendulum: Pendulum {
-                            mass: vec2(1., 1.),
-                            length,
-                            t_pt: vec4(displacement, displacement, 0., 0.),
-                            g,
-                            ..Pendulum::default()
-                        },
-                    });
+                    self.pendulum.length = length;
+                    self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(NoteEvent {
@@ -90,6 +88,8 @@ impl SynthPlayer for Synth {
                     {
                         if note == held_note {
                             // TODO increase friction
+                            self.pendulum.t_pt = Vec4::ZERO;
+                            self.pendulum.d_t_pt = Vec4::ZERO;
                             self.note_event = None;
                         }
                     }
@@ -99,44 +99,34 @@ impl SynthPlayer for Synth {
         }
 
         // produce sound
-        let distorsion = self.params.distortion.load();
         // TODO do a better hipass
         let cutoff = 0.000001f32;
-        if let Some(NoteEvent { pendulum, .. }) = &mut self.note_event {
-            for frame in output.chunks_exact_mut(channels) {
-                // TODO try the other components
-                //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
-                //let a = pendulum.t_pt.x + pendulum.t_pt.y;
-                //let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
-                //let a = pendulum.t_pt.y;
-                //let a = pendulum.t_pt.z * 100000000.;
-                // let a = pendulum.t_pt.w * 100000000.;
-                let tip = Vec2::from(pendulum.t_pt.x.sin_cos()) * pendulum.length.x
-                    + Vec2::from(pendulum.t_pt.y.sin_cos()) * pendulum.length.y;
-                //let a = f32::atan2(tip.x, tip.y);
-                //dbg!(tip);
-                //dbg!(pendulum.length);
-                let full_length = pendulum.length.x + pendulum.length.y;
-                //let a = (tip.length() / full_length) * 2. - 1.;
-                let a = tip.x / full_length;
-                //dbg!(a);
-                self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
-                let hipass_a = a - self.lowpass;
-                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
-                for sample in frame.iter_mut() {
-                    *sample = clipped;
-                }
-                pendulum.update(1. / sample_rate as f32);
+        let pendulum = &mut self.pendulum;
+        for frame in output.chunks_exact_mut(channels) {
+            // TODO try the other components
+            //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
+            //let a = pendulum.t_pt.x + pendulum.t_pt.y;
+            //let a = pendulum.t_pt.x;// - pendulum.t_pt.y;
+            //let a = pendulum.t_pt.y;
+            //let a = pendulum.t_pt.z * 100000000.;
+            // let a = pendulum.t_pt.w * 100000000.;
+            let tip = Vec2::from(pendulum.t_pt.x.sin_cos()) * pendulum.length.x
+                + Vec2::from(pendulum.t_pt.y.sin_cos()) * pendulum.length.y;
+            //let a = f32::atan2(tip.x, tip.y);
+            //dbg!(tip);
+            //dbg!(pendulum.length);
+            let full_length = pendulum.length.x + pendulum.length.y;
+            //let a = (tip.length() / full_length) * 2. - 1.;
+            let a = tip.x / full_length;
+            //dbg!(a);
+            self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
+            let hipass_a = a - self.lowpass;
+            //let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
+            let clipped = hipass_a.clamp(-1f32, 1f32);
+            for sample in frame.iter_mut() {
+                *sample = clipped;
             }
-        } else {
-            for frame in output.chunks_exact_mut(channels) {
-                self.lowpass = (1f32 - cutoff) * self.lowpass;
-                let hipass_a = -self.lowpass;
-                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
-                for sample in frame.iter_mut() {
-                    *sample = clipped;
-                }
-            }
+            pendulum.update(1. / sample_rate as f32);
         }
     }
 }

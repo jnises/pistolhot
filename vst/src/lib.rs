@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;
+use once_cell::sync::OnceCell;
+use std::sync::Mutex;
 use synth::SynthPlayer;
 use vst::{
     plugin::{Category, HostCallback, Info, Plugin},
@@ -23,6 +25,11 @@ impl PistolhotVst {
 }
 
 fn init_logging() {
+    static INITED: OnceCell<()> = OnceCell::new();
+    if INITED.get().is_some() {
+        return;
+    }
+    INITED.get_or_init(|| ());
     log_panics::init();
     use flexi_logger::{Age, Cleanup, Criterion, FileSpec, Logger, Naming};
     let log_folder = dirs::data_local_dir()

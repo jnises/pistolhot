@@ -899,6 +899,7 @@ dependencies = [
  "log",
  "log-panics",
  "msgbox",
+ "once_cell",
  "synth",
  "vst",
  "wmidi",
