@@ -39,7 +39,7 @@ impl Synth {
                 chaoticity: 0.67f32.into(),
             }),
             lowpass: 0f32,
-            pendulum: Pendulum{
+            pendulum: Pendulum {
                 // higher gravity. for better precision
                 g: 9.81f32 * 100000.,
                 mass: vec2(1., 1.),
@@ -80,6 +80,7 @@ impl SynthPlayer for Synth {
                     //dbg!(length);
                     self.pendulum.length = length;
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
+                    self.note_event = Some(NoteEvent { note });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(NoteEvent {
