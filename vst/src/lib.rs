@@ -26,7 +26,7 @@ fn init_logging() {
         .unwrap()
         .join("org.deepness.pistolhot")
         .join("logs");
-    Logger::try_with_str("info")
+    Logger::try_with_str("warning")
         .unwrap()
         .log_to_file(FileSpec::default().directory(log_folder))
         .rotate(
@@ -56,9 +56,18 @@ impl Plugin for PistolhotVst {
         Info {
             name: "Pistolhot".to_string(),
             unique_id: 1073986287, // Used by hosts to differentiate between plugins.
-            midi_inputs: 1,
             category: Category::Synth,
+            inputs: 0,
+            outputs: 2,
             ..Default::default()
+        }
+    }
+
+    fn can_do(&self, can_do: vst::plugin::CanDo) -> vst::api::Supported {
+        match can_do {
+            vst::plugin::CanDo::ReceiveEvents => vst::api::Supported::Yes,
+            vst::plugin::CanDo::ReceiveMidiEvent => vst::api::Supported::Yes,
+            _ => vst::api::Supported::No,
         }
     }
 
