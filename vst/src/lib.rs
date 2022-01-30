@@ -90,13 +90,14 @@ impl Plugin for PistolhotVst {
         // TODO keep scratch buffer to avoid allocations, or change the synthplayer trait to handle non-interleaved channels
         let num_samples = buffer.samples();
         let (_, mut outputs) = buffer.split();
-        let mut interleaved = vec![0f32; outputs.len() * num_samples];
+        let channels = outputs.len();
+        let mut interleaved = vec![0f32; channels * num_samples];
         data.synth
             .play(data.sample_rate, outputs.len(), interleaved.as_mut_slice());
-        for (i, buf) in outputs.into_iter().enumerate() {
+        for (channel, buf) in outputs.into_iter().enumerate() {
             debug_assert!(buf.len() == num_samples);
-            for (j, b) in buf.iter_mut().enumerate() {
-                *b = interleaved[num_samples * i + j];
+            for (sampleidx, b) in buf.iter_mut().enumerate() {
+                *b = interleaved[channels * sampleidx + channel];
             }
         }
     }
