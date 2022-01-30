@@ -1,8 +1,8 @@
 mod pendulum;
+use crossbeam::{atomic::AtomicCell, channel};
+use glam::{vec2, vec4, Vec2};
 use pendulum::Pendulum;
 use std::{f32::consts::PI, sync::Arc};
-use crossbeam::{atomic::AtomicCell, channel};
-use glam::{Vec2, vec2, vec4};
 use wmidi::MidiMessage;
 
 pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
@@ -11,7 +11,6 @@ pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 struct NoteEvent {
     note: wmidi::Note,
     pendulum: Pendulum,
-    lowpass: f32,
 }
 
 // TODO handle params using messages instead?
@@ -20,26 +19,25 @@ pub struct Params {
     pub chaoticity: AtomicCell<f32>,
 }
 
-
 #[derive(Clone)]
 pub struct Synth {
-
     midi_events: MidiChannel,
 
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
+    lowpass: f32,
 }
 
 impl Synth {
     pub fn new(midi_events: MidiChannel) -> Self {
         Self {
-
             midi_events,
             note_event: None,
             params: Arc::new(Params {
                 distortion: 2f32.into(),
                 chaoticity: 0.67f32.into(),
             }),
+            lowpass: 0f32,
         }
     }
 
@@ -83,7 +81,6 @@ impl SynthPlayer for Synth {
                             g,
                             ..Pendulum::default()
                         },
-                        lowpass: 0f32,
                     });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
@@ -102,10 +99,10 @@ impl SynthPlayer for Synth {
         }
 
         // produce sound
-        if let Some(NoteEvent { pendulum, lowpass, .. }) = &mut self.note_event {
-            let distorsion = self.params.distortion.load();
-
-
+        let distorsion = self.params.distortion.load();
+        // TODO do a better hipass
+        let cutoff = 0.000001f32;
+        if let Some(NoteEvent { pendulum, .. }) = &mut self.note_event {
             for frame in output.chunks_exact_mut(channels) {
                 // TODO try the other components
                 //let a = pendulum.t_pt.z / pendulum.length.y.max(0.000001f32) * 100.;
@@ -114,7 +111,8 @@ impl SynthPlayer for Synth {
                 //let a = pendulum.t_pt.y;
                 //let a = pendulum.t_pt.z * 100000000.;
                 // let a = pendulum.t_pt.w * 100000000.;
-                let tip = Vec2::from(pendulum.t_pt.x.sin_cos()) * pendulum.length.x + Vec2::from(pendulum.t_pt.y.sin_cos()) * pendulum.length.y;
+                let tip = Vec2::from(pendulum.t_pt.x.sin_cos()) * pendulum.length.x
+                    + Vec2::from(pendulum.t_pt.y.sin_cos()) * pendulum.length.y;
                 //let a = f32::atan2(tip.x, tip.y);
                 //dbg!(tip);
                 //dbg!(pendulum.length);
@@ -122,10 +120,8 @@ impl SynthPlayer for Synth {
                 //let a = (tip.length() / full_length) * 2. - 1.;
                 let a = tip.x / full_length;
                 //dbg!(a);
-                // TODO do a better hipass
-                let cutoff = 0.0001f32;
-                *lowpass = a * cutoff + (1f32 - cutoff) * *lowpass;
-                let hipass_a = a - *lowpass;
+                self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
+                let hipass_a = a - self.lowpass;
                 let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
                 for sample in frame.iter_mut() {
                     *sample = clipped;
@@ -133,8 +129,14 @@ impl SynthPlayer for Synth {
                 pendulum.update(1. / sample_rate as f32);
             }
         } else {
-            output.fill(0f32);
-
+            for frame in output.chunks_exact_mut(channels) {
+                self.lowpass = (1f32 - cutoff) * self.lowpass;
+                let hipass_a = -self.lowpass;
+                let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
+                for sample in frame.iter_mut() {
+                    *sample = clipped;
+                }
+            }
         }
     }
 }
