@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use synth::SynthPlayer;
 use vst::{
     plugin::{Category, HostCallback, Info, Plugin},
@@ -59,6 +61,7 @@ impl Plugin for PistolhotVst {
             category: Category::Synth,
             inputs: 0,
             outputs: 2,
+            parameters: Params::NUM_PARAMS,
             ..Default::default()
         }
     }
@@ -109,11 +112,43 @@ impl Plugin for PistolhotVst {
             }
         }
     }
+
+    fn get_parameter_object(&mut self) -> Arc<dyn vst::plugin::PluginParameters> {
+        Arc::new(Params {
+            params: self.get_mut_data().synth.get_params(),
+        })
+    }
 }
 
 impl Default for PistolhotVst {
     fn default() -> Self {
         Self(None)
+    }
+}
+
+struct Params {
+    params: Arc<synth::Params>,
+}
+
+impl Params {
+    const NUM_PARAMS: i32 = 2;
+}
+
+impl vst::plugin::PluginParameters for Params {
+    fn get_parameter(&self, index: i32) -> f32 {
+        match index {
+            0 => self.params.chaoticity.load(),
+            1 => self.params.distortion.load(),
+            _ => 0f32,
+        }
+    }
+
+    fn set_parameter(&self, index: i32, value: f32) {
+        match index {
+            0 => self.params.chaoticity.store(value),
+            1 => self.params.distortion.store(value),
+            _ => {}
+        }
     }
 }
 
