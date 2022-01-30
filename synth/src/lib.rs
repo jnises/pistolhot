@@ -76,6 +76,7 @@ impl SynthPlayer for Synth {
                     self.full_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     // TODO set derivatives instead?
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
+                    self.pendulum.d_t_pt = Vec4::ZERO;
                     self.note_event = Some(NoteEvent { note });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
