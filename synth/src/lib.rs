@@ -27,6 +27,7 @@ pub struct Synth {
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
     lowpass: f32,
+    full_length: f32,
 }
 
 impl Synth {
@@ -45,6 +46,7 @@ impl Synth {
                 mass: vec2(1., 1.),
                 ..Pendulum::default()
             },
+            full_length: 1f32,
         }
     }
 
@@ -59,7 +61,7 @@ pub trait SynthPlayer {
 
 impl SynthPlayer for Synth {
     fn play(&mut self, sample_rate: u32, channels: usize, output: &mut [f32]) {
-        let chaoticity = self.params.chaoticity.load().clamp(0f32, 1f32);
+        let chaoticity = self.params.chaoticity.load().clamp(0.01f32, 0.99f32);
         // pump midi messages
         for message in self.midi_events.try_iter() {
             match message {
@@ -71,14 +73,8 @@ impl SynthPlayer for Synth {
                         / 2.;
                     let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
-                    let length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    let m = vec2(1., 1.);
-                    let cm = (m.x - m.y) / m.y;
-                    let b = length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
-                    let c = chaoticity * b / (1f32 - chaoticity);
-                    let length = vec2(b, c);
-                    //dbg!(length);
-                    self.pendulum.length = length;
+                    self.full_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
+                    // TODO set derivatives instead?
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
                     self.note_event = Some(NoteEvent { note });
                 }
@@ -99,8 +95,16 @@ impl SynthPlayer for Synth {
             }
         }
 
+        let m = vec2(1., 1.);
+        let cm = (m.x - m.y) / m.y;
+        let b = self.full_length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
+        let c = chaoticity * b / (1f32 - chaoticity);
+        let length = vec2(b, c);
+        //dbg!(length);
+        self.pendulum.length = length;
+
         // produce sound
-        // TODO do a better hipass
+        // TODO do a better lowpass
         let cutoff = 0.1f32;
         let pendulum = &mut self.pendulum;
         for frame in output.chunks_exact_mut(channels) {
