@@ -1,3 +1,6 @@
-/target
-/pkg
-/web
+**/target/
+/.vscode/
+*.orig
+/wasm/web/
+/vst/pistolhot.vst/
+.DS_Store

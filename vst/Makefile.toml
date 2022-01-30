@@ -1,0 +1,58 @@
+[tasks.build_debug]
+description = "Build debug"
+command = "cargo"
+args = ["build", "--target", "x86_64-apple-darwin"]
+
+[tasks.bundle_debug]
+description = "Make macos bundle"
+script = '''
+NAME=pistolhot
+mkdir -p "$NAME.vst/Contents/MacOS"
+
+# Create the PkgInfo
+echo "BNDL????" > "$NAME.vst/Contents/PkgInfo"
+
+#build the Info.Plist
+echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+<dict>
+<key>CFBundleDevelopmentRegion</key>
+<string>English</string>
+
+<key>CFBundleExecutable</key>
+<string>$NAME</string>
+
+<key>CFBundleGetInfoString</key>
+<string>vst</string>
+
+<key>CFBundleIconFile</key>
+<string></string>
+
+<key>CFBundleIdentifier</key>
+<string>org.deepness.$NAME</string>
+
+<key>CFBundleInfoDictionaryVersion</key>
+<string>6.0</string>
+
+<key>CFBundleName</key>
+<string>$NAME</string>
+
+<key>CFBundlePackageType</key>
+<string>BNDL</string>
+
+<key>CFBundleVersion</key>
+<string>1.0</string>
+
+<key>CFBundleSignature</key>
+<string>$((RANDOM % 9999))</string>
+
+<key>CSResourcesFileMapped</key>
+<string></string>
+
+</dict>
+</plist>" > "$NAME.vst/Contents/Info.plist"
+cp "target/x86_64-apple-darwin/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
+#cp "target/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
+'''
+dependencies = ["build_debug"]
