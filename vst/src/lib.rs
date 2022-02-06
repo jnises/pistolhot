@@ -60,7 +60,7 @@ impl Plugin for PistolhotVst {
         let (midi_sender, midi_receiver) = crossbeam::channel::bounded(1024);
         let synth = synth::Synth::new(midi_receiver);
         let sample_rate = 44100;
-        let editor = Some(PistolhotEditor::default());
+        let editor = Some(PistolhotEditor::new(synth.get_params()));
         Self(Some(Data {
             sample_rate,
             synth,
