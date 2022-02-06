@@ -5,14 +5,19 @@ use once_cell::sync::OnceCell;
 use std::sync::Mutex;
 use synth::SynthPlayer;
 use vst::{
+    editor::Editor,
     plugin::{Category, HostCallback, Info, Plugin},
     plugin_main,
 };
+
+mod editor;
+use editor::PistolhotEditor;
 
 struct Data {
     sample_rate: u32,
     synth: synth::Synth,
     midi_sender: crossbeam::channel::Sender<wmidi::MidiMessage<'static>>,
+    editor: Option<PistolhotEditor>,
 }
 
 struct PistolhotVst(Option<Data>);
@@ -55,10 +60,12 @@ impl Plugin for PistolhotVst {
         let (midi_sender, midi_receiver) = crossbeam::channel::bounded(1024);
         let synth = synth::Synth::new(midi_receiver);
         let sample_rate = 44100;
+        let editor = Some(PistolhotEditor::default());
         Self(Some(Data {
             sample_rate,
             synth,
             midi_sender,
+            editor,
         }))
     }
 
@@ -125,6 +132,13 @@ impl Plugin for PistolhotVst {
         Arc::new(Params {
             params: self.get_mut_data().synth.get_params(),
         })
+    }
+
+    fn get_editor(&mut self) -> Option<Box<dyn Editor>> {
+        let data = self.get_mut_data();
+        data.editor
+            .take()
+            .map(|editor| Box::new(editor) as Box<dyn Editor>)
     }
 }
 
