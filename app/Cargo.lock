@@ -1640,6 +1640,7 @@ name = "synth"
 version = "0.0.1"
 dependencies = [
  "crossbeam",
+ "egui",
  "glam",
  "wmidi",
 ]

@@ -1,4 +1,6 @@
 mod pendulum;
+mod params_gui;
+pub use params_gui::params_gui;
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4};
 use pendulum::Pendulum;

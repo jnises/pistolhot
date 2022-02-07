@@ -3,6 +3,7 @@ use egui_baseview::EguiWindow;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::Arc;
 use vst::editor::Editor;
+use synth::params_gui;
 
 pub struct PistolhotEditor {
     window_handle: Option<baseview::WindowHandle>,
@@ -56,18 +57,7 @@ impl Editor for PistolhotEditor {
                 egui::CentralPanel::default().show(&egui_ctx, |ui| {
                     ui.heading("Pistolhot");
                     ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("distortion:");
-                            let mut distorsion = params.distortion.load();
-                            ui.add(egui::Slider::new(&mut distorsion, 1f32..=10f32));
-                            params.distortion.store(distorsion);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("chaoticity:");
-                            let mut chaoticity = params.chaoticity.load();
-                            ui.add(egui::Slider::new(&mut chaoticity, 0.0001f32..=0.999f32));
-                            params.chaoticity.store(chaoticity);
-                        });
+                        params_gui(ui, &params);
                     });
                 });
             },

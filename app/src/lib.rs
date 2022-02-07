@@ -6,7 +6,7 @@ mod timer;
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
-use synth::{self, Synth};
+use synth::{self, Synth, params_gui};
 use crate::{audio::AudioManager, synth::Params};
 use cpal::traits::DeviceTrait;
 use crossbeam::channel;
@@ -212,18 +212,7 @@ impl App for Pistolhot {
                         ui.label(&*status_text.lock());
                     });
                     ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("distortion:");
-                            let mut distorsion = params.distortion.load();
-                            ui.add(egui::Slider::new(&mut distorsion, 1f32..=10f32));
-                            params.distortion.store(distorsion);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("chaoticity:");
-                            let mut chaoticity = params.chaoticity.load();
-                            ui.add(egui::Slider::new(&mut chaoticity, 0.0001f32..=0.999f32));
-                            params.chaoticity.store(chaoticity);
-                        });
+                        params_gui(ui, &params);
                     });
                     // put onscreen keyboard at bottom of window
                     let height = ui.available_size().y;
