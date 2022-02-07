@@ -157,7 +157,6 @@ impl Params {
     fn param_ref(&self, index: i32) -> &AtomicCell<f32> {
         match index {
             0 => &self.params.chaoticity,
-            1 => &self.params.distortion,
             _ => panic!("unknown param"),
         }
     }
@@ -175,7 +174,6 @@ impl vst::plugin::PluginParameters for Params {
     fn get_parameter_name(&self, index: i32) -> String {
         match index {
             0 => "chaoticity".to_string(),
-            1 => "distorsion".to_string(),
             _ => "".to_string(),
         }
     }

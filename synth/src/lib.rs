@@ -16,8 +16,6 @@ struct NoteEvent {
 
 // TODO handle params using messages instead?
 pub struct Params {
-    // TODO remove this
-    pub distortion: AtomicCell<f32>,
     pub chaoticity: AtomicCell<f32>,
 }
 
@@ -38,7 +36,6 @@ impl Synth {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
-                distortion: 2f32.into(),
                 chaoticity: 0.67f32.into(),
             }),
             lowpass: 0f32,
