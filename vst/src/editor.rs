@@ -18,11 +18,12 @@ impl PistolhotEditor {
     }
 }
 
-const WINDOW_DIMENSIONS: (i32, i32) = (300, 200);
+const WINDOW_WIDTH: i32 = 300;
+const WINDOW_HEIGHT: i32 = 200;
 
 impl Editor for PistolhotEditor {
     fn size(&self) -> (i32, i32) {
-        (WINDOW_DIMENSIONS.0 as i32, WINDOW_DIMENSIONS.1 as i32)
+        (WINDOW_WIDTH, WINDOW_HEIGHT)
     }
 
     fn position(&self) -> (i32, i32) {
@@ -38,7 +39,7 @@ impl Editor for PistolhotEditor {
         let settings = egui_baseview::Settings {
             window: baseview::WindowOpenOptions {
                 title: "Pistolhot".to_string(),
-                size: baseview::Size::new(WINDOW_DIMENSIONS.0 as f64, WINDOW_DIMENSIONS.1 as f64),
+                size: baseview::Size::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64),
                 scale: baseview::WindowScalePolicy::SystemScaleFactor,
             },
             render_settings: egui_baseview::RenderSettings::default(),
@@ -91,7 +92,7 @@ struct VstParent(*mut ::std::ffi::c_void);
 unsafe impl HasRawWindowHandle for VstParent {
     fn raw_window_handle(&self) -> RawWindowHandle {
         let mut handle = raw_window_handle::AppKitHandle::empty();
-        handle.ns_view = self.0; // as *mut ::std::ffi::c_void;
+        handle.ns_view = self.0;
         RawWindowHandle::AppKit(handle)
     }
 }
@@ -100,7 +101,7 @@ unsafe impl HasRawWindowHandle for VstParent {
 unsafe impl HasRawWindowHandle for VstParent {
     fn raw_window_handle(&self) -> RawWindowHandle {
         let mut handle = raw_window_handle::Win32Handle::empty();
-        handle.hwnd = self.0; // as *mut ::std::ffi::c_void;
+        handle.hwnd = self.0;
         RawWindowHandle::AppKit(handle)
     }
 }
