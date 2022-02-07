@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;
 use once_cell::sync::OnceCell;
-use std::sync::Mutex;
 use synth::SynthPlayer;
 use vst::{
     editor::Editor,

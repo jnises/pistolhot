@@ -21,11 +21,9 @@ raw-window-handle = "0.4.2"
 synth = { path = "../synth" }
 vst = "0.2.1"
 wmidi = "4.0.6"
-wgpu = "0.12.0"
-pollster = "0.2.5"
 # need patches for egui 0.16
 # TODO switch back to main repo when merged
-egui-baseview = { git = "https://github.com/robbert-vdh/egui-baseview", rev = "161c831ded1289eb63d6cd530ac4574e6d8f351a" }
+egui-baseview = { git = "https://github.com/robbert-vdh/egui-baseview", rev = "9234744bc4ddfa5252fd220f2d5f24bb9d9fa66d" }
 egui = "0.16.1"
 baseview = { git = "https://github.com/RustAudio/baseview.git" }
 

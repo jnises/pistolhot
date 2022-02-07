@@ -20,8 +20,6 @@ impl PistolhotEditor {
 
 const WINDOW_DIMENSIONS: (i32, i32) = (300, 200);
 
-struct State;
-
 impl Editor for PistolhotEditor {
     fn size(&self) -> (i32, i32) {
         (WINDOW_DIMENSIONS.0 as i32, WINDOW_DIMENSIONS.1 as i32)
@@ -53,7 +51,7 @@ impl Editor for PistolhotEditor {
             // build
             |_ctx: &egui::CtxRef, _queue: &mut egui_baseview::Queue, _state: &mut ()| {},
             // update
-            move |egui_ctx: &egui::CtxRef, queue: &mut egui_baseview::Queue, _state: &mut ()| {
+            move |egui_ctx: &egui::CtxRef, _queue: &mut egui_baseview::Queue, _state: &mut ()| {
                 egui::CentralPanel::default().show(&egui_ctx, |ui| {
                     ui.heading("Pistolhot");
                     ui.group(|ui| {
