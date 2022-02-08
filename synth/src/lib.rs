@@ -27,7 +27,7 @@ pub struct Synth {
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
     lowpass: f32,
-    full_length: f32,
+    center_length: f32,
 }
 
 impl Synth {
@@ -45,7 +45,7 @@ impl Synth {
                 mass: vec2(1., 1.),
                 ..Pendulum::default()
             },
-            full_length: 1f32,
+            center_length: 1f32,
         }
     }
 
@@ -72,7 +72,7 @@ impl SynthPlayer for Synth {
                         / 2.;
                     let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
-                    self.full_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
+                    self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     // TODO set derivatives instead?
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
                     self.pendulum.d_t_pt = Vec4::ZERO;
@@ -95,10 +95,14 @@ impl SynthPlayer for Synth {
             }
         }
 
-        let m = vec2(1., 1.);
-        let cm = (m.x - m.y) / m.y;
-        let b = self.full_length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
-        let c = chaoticity * b / (1f32 - chaoticity);
+        // TODO m?? is that mass?
+        //let m = vec2(1., 1.);
+        //let cm = (m.x - m.y) / m.y;
+        // TODO figure this out
+        let b = self.center_length  / (1f32 + chaoticity / 2f32);
+        let c = b * chaoticity;
+        //let b = self.full_length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
+        //let c = chaoticity * b / (1f32 - chaoticity);
         let length = vec2(b, c);
         //dbg!(length);
         self.pendulum.length = length;
