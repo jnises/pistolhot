@@ -4,7 +4,7 @@ use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4};
 pub use params_gui::params_gui;
 use pendulum::Pendulum;
-use std::{f32::consts::PI, sync::Arc};
+use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
 use wmidi::MidiMessage;
 
 pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
@@ -18,6 +18,8 @@ struct NoteEvent {
 pub struct Params {
     pub chaoticity: AtomicCell<f32>,
 }
+
+pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
 
 #[derive(Clone)]
 pub struct Synth {
@@ -60,7 +62,11 @@ pub trait SynthPlayer {
 
 impl SynthPlayer for Synth {
     fn play(&mut self, sample_rate: u32, channels: usize, output: &mut [f32]) {
-        let chaoticity = self.params.chaoticity.load().clamp(0.01f32, 0.99f32);
+        let chaoticity = self
+            .params
+            .chaoticity
+            .load()
+            .clamp(*CHAOTICITY_RANGE.start(), *CHAOTICITY_RANGE.end());
         // pump midi messages
         for message in self.midi_events.try_iter() {
             match message {
