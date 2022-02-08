@@ -1,7 +1,7 @@
 mod params_gui;
 mod pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
-use glam::{vec2, vec4, Vec2, Vec4};
+use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
 use pendulum::Pendulum;
 use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
@@ -81,7 +81,12 @@ impl SynthPlayer for Synth {
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     // TODO set derivatives instead?
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
-                    self.pendulum.d_t_pt = Vec4::ZERO;
+
+                    // self.pendulum.t_pt.z = displacement * g;
+                    // self.pendulum.t_pt.w = displacement * g;
+                    //self.pendulum.d_t_pt = Vec4::ZERO;
+                    //self.pendulum.d_t_pt = vec4(displacement, displacement, 0., 0.) / 44100f32;
+                    //self.pendulum.d_t_pt = vec4(1., 1., 1., 1.) * 0.0001;//1., 1.);
                     self.note_event = Some(NoteEvent { note });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
@@ -112,6 +117,7 @@ impl SynthPlayer for Synth {
         let length = vec2(b, c);
         //dbg!(length);
         self.pendulum.length = length;
+        // TODO recalculate the momenta depending on the chaoticity?
 
         // produce sound
         // TODO do a better lowpass

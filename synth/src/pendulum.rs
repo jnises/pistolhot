@@ -11,6 +11,7 @@ pub struct Pendulum {
     // simulation state (theta0, theta1, ptheta0, ptheta1) where ptheta are the generalized momenta
     pub t_pt: Vec4,
     // derivatives
+    // TODO do we need to store this?
     pub d_t_pt: Vec4,
     pub time_error: f32,
 }
