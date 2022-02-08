@@ -1,8 +1,8 @@
-mod pendulum;
 mod params_gui;
-pub use params_gui::params_gui;
+mod pendulum;
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4};
+pub use params_gui::params_gui;
 use pendulum::Pendulum;
 use std::{f32::consts::PI, sync::Arc};
 use wmidi::MidiMessage;
@@ -99,7 +99,7 @@ impl SynthPlayer for Synth {
         //let m = vec2(1., 1.);
         //let cm = (m.x - m.y) / m.y;
         // TODO figure this out
-        let b = self.center_length  / (1f32 + chaoticity / 2f32);
+        let b = self.center_length / (1f32 + chaoticity / 2f32);
         let c = b * chaoticity;
         //let b = self.full_length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
         //let c = chaoticity * b / (1f32 - chaoticity);

@@ -49,11 +49,19 @@ impl Pendulum {
                     let theta = t_pt.xy();
                     let pt = t_pt.zw();
                     let dt0 = (length.y * pt.x - length.x * pt.y * f32::cos(theta.x - theta.y))
-                        / (length.x.powi(2) * length.y * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
-                    let dt1 = (length.x * (mass.x + mass.y) * pt.y - length.y * mass.y * pt.x * f32::cos(theta.x - theta.y))
-                        / (length.x * length.y.powi(2) * mass.y * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
+                        / (length.x.powi(2)
+                            * length.y
+                            * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
+                    let dt1 = (length.x * (mass.x + mass.y) * pt.y
+                        - length.y * mass.y * pt.x * f32::cos(theta.x - theta.y))
+                        / (length.x
+                            * length.y.powi(2)
+                            * mass.y
+                            * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
                     let c0 = pt.x * pt.y * f32::sin(theta.x - theta.y)
-                        / (length.x * length.y * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
+                        / (length.x
+                            * length.y
+                            * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)));
                     let c1 = (length.y.powi(2) * mass.y * pt.x.powi(2)
                         + length.x.powi(2) * (mass.x + mass.y) * pt.y.powi(2)
                         - length.x * length.y * mass.y * pt.x * pt.y * f32::cos(theta.x - theta.y))
