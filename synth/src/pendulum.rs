@@ -48,6 +48,9 @@ impl Pendulum {
                 let f = |t_pt: &Vec4| {
                     let theta = t_pt.xy();
                     let pt = t_pt.zw();
+                    // TODO revert to simple pendulum if either length is close to 0?
+                    // TODO simplify by setting both masses to 1?
+                    // TODO extract common calculations
                     let dt0 = (length.y * pt.x - length.x * pt.y * f32::cos(theta.x - theta.y))
                         / (length.x.powi(2)
                             * length.y
@@ -73,7 +76,13 @@ impl Pendulum {
                     let dp0 = -(mass.x + mass.y) * g * length.x * f32::sin(theta.x) - c0 + c1;
                     let dp1 = -mass.y * g * length.y * f32::sin(theta.y) + c0 - c1;
                     // TODO add friction
-                    vec4(dt0, dt1, dp0, dp1)
+                    const MAX_D: f32 = 999999f32;
+                    vec4(
+                        dt0.clamp(-MAX_D, MAX_D),
+                        dt1.clamp(-MAX_D, MAX_D),
+                        dp0.clamp(-MAX_D, MAX_D),
+                        dp1.clamp(-MAX_D, MAX_D),
+                    )
                 };
                 let k1 = f(t_pt);
                 let k2 = f(&(*t_pt + *step_size * k1 / 2.));
