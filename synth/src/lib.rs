@@ -1,5 +1,6 @@
 mod params_gui;
 mod pendulum;
+use biquad::{ToHertz, Biquad};
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
@@ -21,6 +22,8 @@ pub struct Params {
 
 pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
 
+const LOWPASS_FREQ: f32 = 15000f32;
+
 #[derive(Clone)]
 pub struct Synth {
     midi_events: MidiChannel,
@@ -28,7 +31,8 @@ pub struct Synth {
     pendulum: Pendulum,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
-    lowpass: f32,
+    //lowpass: f32,
+    lowpass: Option<(u32, biquad::DirectForm1<f32>)>,
     center_length: f32,
 }
 
@@ -40,7 +44,7 @@ impl Synth {
             params: Arc::new(Params {
                 chaoticity: 0.67f32.into(),
             }),
-            lowpass: 0f32,
+            lowpass: None,
             pendulum: Pendulum {
                 // higher gravity. for better precision
                 g: 9.81f32 * 100000.,
@@ -106,6 +110,28 @@ impl SynthPlayer for Synth {
             }
         }
 
+        match self.lowpass {
+            Some((srate, _)) if srate == sample_rate => {}
+            _ => {
+                self.lowpass = Some((
+                    sample_rate,
+                    biquad::DirectForm1::<f32>::new(
+                        biquad::Coefficients::<f32>::from_params(
+                            // TODO use singlepole instead?
+                            biquad::Type::LowPass,
+                            //biquad::Type::SinglePoleLowPass,
+                            sample_rate.hz(),
+                            LOWPASS_FREQ.hz(),
+                            biquad::Q_BUTTERWORTH_F32,
+                        )
+                        .unwrap(),
+                    ),
+                ));
+
+            }
+        }
+        let lowpass = &mut self.lowpass.as_mut().unwrap().1;
+
         // TODO m?? is that mass?
         //let m = vec2(1., 1.);
         //let cm = (m.x - m.y) / m.y;
@@ -121,7 +147,7 @@ impl SynthPlayer for Synth {
 
         // produce sound
         // TODO do a better lowpass
-        let cutoff = 0.1f32;
+        //let cutoff = 0.1f32;
         let pendulum = &mut self.pendulum;
         for frame in output.chunks_exact_mut(channels) {
             // TODO try the other components
@@ -140,11 +166,12 @@ impl SynthPlayer for Synth {
             //let a = (tip.length() / full_length) * 2. - 1.;
             let a = tip.x / full_length;
             //dbg!(a);
-            self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
+            let lowpassed = lowpass.run(a);
+            //self.lowpass = a * cutoff + (1f32 - cutoff) * self.lowpass;
             //let hipass_a = a - self.lowpass;
             //let clipped = 2. / std::f32::consts::PI * f32::atan(distorsion * hipass_a);
             //let clipped = hipass_a.clamp(-1f32, 1f32);
-            let clipped = self.lowpass.clamp(-1f32, 1f32);
+            let clipped = lowpassed.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
