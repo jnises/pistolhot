@@ -135,6 +135,8 @@ impl SynthPlayer for Synth {
         // TODO m?? is that mass?
         //let m = vec2(1., 1.);
         //let cm = (m.x - m.y) / m.y;
+        // TODO make the lengths the same, and change the mass instead?
+        // TODO is it perhaps only the first length that should be used to calculate the center of mass?
         // TODO figure this out
         let b = self.center_length / (1f32 + chaoticity / 2f32);
         let c = b * chaoticity;
