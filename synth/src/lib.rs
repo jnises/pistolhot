@@ -22,7 +22,7 @@ pub struct Params {
 
 pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
 
-const LOWPASS_FREQ: f32 = 15000f32;
+const LOWPASS_FREQ: f32 = 10000f32;
 
 #[derive(Clone)]
 pub struct Synth {
@@ -83,7 +83,7 @@ impl SynthPlayer for Synth {
                     let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    // TODO set derivatives instead?
+                    // TODO set momenta instead?
                     self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
 
                     // self.pendulum.t_pt.z = displacement * g;
@@ -121,7 +121,7 @@ impl SynthPlayer for Synth {
                             biquad::Type::LowPass,
                             //biquad::Type::SinglePoleLowPass,
                             sample_rate.hz(),
-                            LOWPASS_FREQ.hz(),
+                            LOWPASS_FREQ.min(sample_rate as f32 / 2.001f32).hz(),
                             biquad::Q_BUTTERWORTH_F32,
                         )
                         .unwrap(),
