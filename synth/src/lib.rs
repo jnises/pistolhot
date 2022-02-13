@@ -1,6 +1,6 @@
 mod params_gui;
 mod pendulum;
-use biquad::{ToHertz, Biquad};
+use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
@@ -75,16 +75,19 @@ impl SynthPlayer for Synth {
         for message in self.midi_events.try_iter() {
             match message {
                 wmidi::MidiMessage::NoteOn(_, note, velocity) => {
-                    let displacement = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
-                        / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
-                        * PI
+                    let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
+                        / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
+                    let displacement = norm_vel * PI
                         // / 2.
                         / 2.;
                     let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
                     // TODO set momenta instead?
-                    self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
+                    //self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
+                    // TOOD these should depend on t_pt.xy somehow
+                    self.pendulum.t_pt.z = norm_vel * 10f32;
+                    self.pendulum.t_pt.w = norm_vel * 10f32;
 
                     // self.pendulum.t_pt.z = displacement * g;
                     // self.pendulum.t_pt.w = displacement * g;
@@ -127,7 +130,6 @@ impl SynthPlayer for Synth {
                         .unwrap(),
                     ),
                 ));
-
             }
         }
         let lowpass = &mut self.lowpass.as_mut().unwrap().1;
