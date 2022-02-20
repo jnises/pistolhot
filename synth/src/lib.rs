@@ -18,9 +18,11 @@ struct NoteEvent {
 // TODO handle params using messages instead?
 pub struct Params {
     pub chaoticity: AtomicCell<f32>,
+    pub release: AtomicCell<f32>,
 }
 
 pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
+pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=1f32;
 
 const LOWPASS_FREQ: f32 = 10000f32;
 
@@ -43,6 +45,7 @@ impl Synth {
             note_event: None,
             params: Arc::new(Params {
                 chaoticity: 0.67f32.into(),
+                release: 0.1f32.into(),
             }),
             lowpass: None,
             pendulum: Pendulum {
@@ -71,6 +74,11 @@ impl SynthPlayer for Synth {
             .chaoticity
             .load()
             .clamp(*CHAOTICITY_RANGE.start(), *CHAOTICITY_RANGE.end());
+        let release = self
+            .params
+            .release
+            .load()
+            .clamp(*RELEASE_RANGE.start(), *RELEASE_RANGE.end());
         // pump midi messages
         for message in self.midi_events.try_iter() {
             match message {
@@ -94,6 +102,7 @@ impl SynthPlayer for Synth {
                     //self.pendulum.d_t_pt = Vec4::ZERO;
                     //self.pendulum.d_t_pt = vec4(displacement, displacement, 0., 0.) / 44100f32;
                     //self.pendulum.d_t_pt = vec4(1., 1., 1., 1.) * 0.0001;//1., 1.);
+                    self.pendulum.friction = 0f32;
                     self.note_event = Some(NoteEvent { note });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
@@ -103,7 +112,8 @@ impl SynthPlayer for Synth {
                     {
                         if note == held_note {
                             // TODO increase friction
-                            self.pendulum.t_pt = Vec4::ZERO;
+                            //self.pendulum.t_pt = Vec4::ZERO;
+                            self.pendulum.friction = release;
                             self.note_event = None;
                         }
                     }

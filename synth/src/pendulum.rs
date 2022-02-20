@@ -19,7 +19,7 @@ impl Default for Pendulum {
         Self {
             g: 9.81,
             step_size: 1.0 / 44100.0,
-            friction: 0.1,
+            friction: 0f32,
             mass: vec2(1f32, 1f32),
             length: vec2(1f32, 1f32),
             t_pt: Vec4::ZERO,
@@ -72,8 +72,12 @@ impl Pendulum {
                             * length.y.powi(2)
                             * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)).powi(2))
                         * f32::sin(2. * (theta.x - theta.y));
-                    let dp0 = -(mass.x + mass.y) * g * length.x * f32::sin(theta.x) - c0 + c1;
-                    let dp1 = -mass.y * g * length.y * f32::sin(theta.y) + c0 - c1;
+                    let mut dp0 = -(mass.x + mass.y) * g * length.x * f32::sin(theta.x) - c0 + c1;
+                    let mut dp1 = -mass.y * g * length.y * f32::sin(theta.y) + c0 - c1;
+                    // a naive friction. not physical at all
+                    // TODO there should at least be something about mass here right?
+                    dp0 -= dt0 * friction;
+                    dp1 -= dt1 * friction;
                     // TODO add friction
                     const MAX_D: f32 = 999999f32;
                     vec4(
