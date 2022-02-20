@@ -22,7 +22,7 @@ pub struct Params {
 }
 
 pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
-pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=1f32;
+pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=0.99f32;
 
 const LOWPASS_FREQ: f32 = 10000f32;
 
