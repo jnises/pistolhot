@@ -26,6 +26,13 @@ pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=0.99f32;
 
 const LOWPASS_FREQ: f32 = 10000f32;
 
+fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
+    let b = center_length / (1f32 + chaoticity / 2f32);
+    let c = b * chaoticity;
+    let length = vec2(b, c);
+    length
+}
+
 #[derive(Clone)]
 pub struct Synth {
     midi_events: MidiChannel,
@@ -85,17 +92,31 @@ impl SynthPlayer for Synth {
                 wmidi::MidiMessage::NoteOn(_, note, velocity) => {
                     let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
                         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
-                    let displacement = norm_vel * PI
-                        // / 2.
-                        / 2.;
+                    // TODO make g a constant
                     let g = self.pendulum.g;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    // TODO set momenta instead?
-                    //self.pendulum.t_pt = vec4(displacement, displacement, 0., 0.);
-                    // TOOD these should depend on t_pt.xy somehow
-                    self.pendulum.t_pt.z = norm_vel * 10f32;
-                    self.pendulum.t_pt.w = norm_vel * 10f32;
+                    let displacement = norm_vel * PI / 2.;
+                    let length = get_lengths(self.center_length, chaoticity);
+                    let Pendulum { t_pt, mass, .. } = &mut self.pendulum;
+                    let potential = length.x * (1. - t_pt.x.cos()) + length.y * (1. - t_pt.y.cos());
+                    let desired_potential = (1. - displacement.cos()) * (length.x + length.y);
+                    let kinetic = desired_potential - potential;
+
+                    //let emv = energy - potential;
+                    if kinetic < 0f32 {
+                        // potential energy too high to adjust using momentum
+                        // TODO add some temporary friction until we are at the requested energy level
+                        t_pt.z = 0f32;
+                        t_pt.w = 0f32;
+                    } else {
+                        // just setting both momentums to the same value for now. should they be different?
+                        // let the mass be the sum of the two masses for now
+                        let p = f32::sqrt(kinetic * (mass.x + mass.y));
+                        // giving the momentum the same sign as before. does that make sense?
+                        t_pt.z = t_pt.z.signum() * p;
+                        t_pt.w = t_pt.w.signum() * p;
+                    }
 
                     // self.pendulum.t_pt.z = displacement * g;
                     // self.pendulum.t_pt.w = displacement * g;
@@ -111,9 +132,9 @@ impl SynthPlayer for Synth {
                     }) = self.note_event
                     {
                         if note == held_note {
-                            // TODO increase friction
+                            let friction = release.powi(2);
                             //self.pendulum.t_pt = Vec4::ZERO;
-                            self.pendulum.friction = release;
+                            self.pendulum.friction = friction;
                             self.note_event = None;
                         }
                     }
@@ -149,12 +170,7 @@ impl SynthPlayer for Synth {
         // TODO make the lengths the same, and change the mass instead?
         // TODO is it perhaps only the first length that should be used to calculate the center of mass?
         // TODO figure this out
-        let b = self.center_length / (1f32 + chaoticity / 2f32);
-        let c = b * chaoticity;
-        //let b = self.full_length * (1f32 - chaoticity) / (1f32 + chaoticity * (cm - 1f32));
-        //let c = chaoticity * b / (1f32 - chaoticity);
-        let length = vec2(b, c);
-        //dbg!(length);
+        let length = get_lengths(self.center_length, chaoticity);
         self.pendulum.length = length;
         // TODO recalculate the momenta depending on the chaoticity?
 
