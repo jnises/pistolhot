@@ -1,4 +1,5 @@
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
+use std::f32::consts::PI;
 
 #[derive(Clone)]
 pub struct Pendulum {
@@ -93,6 +94,8 @@ impl Pendulum {
                 let k4 = f(&(*t_pt + *step_size * k3));
                 let d = 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
                 *t_pt += *step_size * d;
+                t_pt.z %= 2f32 * PI;
+                t_pt.w %= 2f32 * PI;
             }
             *time_error -= iterations as f32 * step_size;
         }
