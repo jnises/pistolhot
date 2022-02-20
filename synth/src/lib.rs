@@ -104,7 +104,6 @@ impl SynthPlayer for Synth {
                         if note == held_note {
                             // TODO increase friction
                             self.pendulum.t_pt = Vec4::ZERO;
-                            self.pendulum.d_t_pt = Vec4::ZERO;
                             self.note_event = None;
                         }
                     }

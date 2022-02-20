@@ -4,15 +4,13 @@ use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub struct Pendulum {
     pub g: f32,
     pub step_size: f32,
+    pub friction: f32,
     // the mass of the pendulums
     pub mass: Vec2,
     // the length of the pendulums
     pub length: Vec2,
     // simulation state (theta0, theta1, ptheta0, ptheta1) where ptheta are the generalized momenta
     pub t_pt: Vec4,
-    // derivatives
-    // TODO do we need to store this?
-    pub d_t_pt: Vec4,
     pub time_error: f32,
 }
 
@@ -21,10 +19,10 @@ impl Default for Pendulum {
         Self {
             g: 9.81,
             step_size: 1.0 / 44100.0,
+            friction: 0.1,
             mass: vec2(1f32, 1f32),
             length: vec2(1f32, 1f32),
             t_pt: Vec4::ZERO,
-            d_t_pt: Vec4::ZERO,
             time_error: 0.,
         }
     }
@@ -35,10 +33,10 @@ impl Pendulum {
         let Self {
             ref g,
             ref step_size,
+            ref friction,
             ref length,
             ref mass,
             t_pt,
-            d_t_pt,
             time_error,
             ..
         } = self;
@@ -89,8 +87,8 @@ impl Pendulum {
                 let k2 = f(&(*t_pt + *step_size * k1 / 2.));
                 let k3 = f(&(*t_pt + *step_size * k2 / 2.));
                 let k4 = f(&(*t_pt + *step_size * k3));
-                *d_t_pt = 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
-                *t_pt += *step_size * *d_t_pt;
+                let d = 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
+                *t_pt += *step_size * d;
             }
             *time_error -= iterations as f32 * step_size;
         }
