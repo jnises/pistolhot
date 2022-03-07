@@ -1,7 +1,7 @@
 [tasks.build_debug]
 description = "Build debug"
 command = "cargo"
-args = ["build"]#, "--target", "aarch64-apple-darwin"]#"x86_64-apple-darwin"]
+args = ["build", "--target", "x86_64-apple-darwin"]
 
 [tasks.mac_bundle_debug]
 description = "Make macos bundle"
@@ -52,7 +52,7 @@ echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 
 </dict>
 </plist>" > "$NAME.vst/Contents/Info.plist"
-#cp "target/x86_64-apple-darwin/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
-cp "target/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
+cp "target/x86_64-apple-darwin/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
+#cp "target/debug/lib$NAME.dylib" "$NAME.vst/Contents/MacOS/$NAME"
 '''
 dependencies = ["build_debug"]

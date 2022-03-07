@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;
+use log::info;
 use once_cell::sync::OnceCell;
 use synth::SynthPlayer;
 use vst::{
@@ -50,6 +51,7 @@ fn init_logging() {
         )
         .start()
         .unwrap();
+    info!("{}", env!("CARGO_PKG_VERSION"));
 }
 
 impl Plugin for PistolhotVst {
