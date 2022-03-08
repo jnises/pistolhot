@@ -7,6 +7,6 @@ version = "0.0.1"
 [dependencies]
 biquad = "0.4.2"
 crossbeam = "0.8"
-egui = "0.16.1"
+egui = "0.17"
 glam = "0.20"
 wmidi = "4.0"

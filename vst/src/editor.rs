@@ -37,23 +37,21 @@ impl Editor for PistolhotEditor {
             return false;
         }
         assert!(parent != std::ptr::null_mut());
-        let settings = egui_baseview::Settings {
-            window: baseview::WindowOpenOptions {
-                title: "Pistolhot".to_string(),
-                size: baseview::Size::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64),
-                scale: baseview::WindowScalePolicy::SystemScaleFactor,
-            },
-            render_settings: egui_baseview::RenderSettings::default(),
+        let settings = baseview::WindowOpenOptions {
+            title: "Pistolhot".to_string(),
+            size: baseview::Size::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64),
+            scale: baseview::WindowScalePolicy::SystemScaleFactor,
+            gl_config: Some(baseview::gl::GlConfig::default()),
         };
         let params = self.params.clone();
-        self.window_handle = Some(EguiWindow::open_parented(
+        self.window_handle = EguiWindow::open_parented(
             &VstParent(parent),
             settings,
             (),
             // build
-            |_ctx: &egui::CtxRef, _queue: &mut egui_baseview::Queue, _state: &mut ()| {},
+            |_ctx: &egui::Context, _queue: &mut egui_baseview::Queue, _state: &mut ()| {},
             // update
-            move |egui_ctx: &egui::CtxRef, _queue: &mut egui_baseview::Queue, _state: &mut ()| {
+            move |egui_ctx: &egui::Context, _queue: &mut egui_baseview::Queue, _state: &mut ()| {
                 egui::CentralPanel::default().show(&egui_ctx, |ui| {
                     ui.heading("Pistolhot");
                     ui.group(|ui| {
@@ -61,7 +59,8 @@ impl Editor for PistolhotEditor {
                     });
                 });
             },
-        ));
+        );
+        assert!(self.window_handle.is_some());
         true
     }
 
