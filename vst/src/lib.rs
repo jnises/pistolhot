@@ -41,7 +41,7 @@ fn init_logging() {
         .unwrap()
         .join("org.deepness.pistolhot")
         .join("logs");
-    Logger::try_with_str("warning")
+    Logger::try_with_str("info")
         .unwrap()
         .log_to_file(FileSpec::default().directory(log_folder))
         .rotate(
@@ -154,7 +154,7 @@ struct Params {
 }
 
 impl Params {
-    const NUM_PARAMS: i32 = 2;
+    const NUM_PARAMS: i32 = 1;
 
     fn param_ref(&self, index: i32) -> &AtomicCell<f32> {
         match index {
