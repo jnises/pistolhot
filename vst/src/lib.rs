@@ -17,7 +17,6 @@ struct Data {
     sample_rate: u32,
     synth: synth::Synth,
     midi_sender: crossbeam::channel::Sender<wmidi::MidiMessage<'static>>,
-    editor: Option<PistolhotEditor>,
 }
 
 struct PistolhotVst(Option<Data>);
@@ -61,12 +60,10 @@ impl Plugin for PistolhotVst {
         let (midi_sender, midi_receiver) = crossbeam::channel::bounded(1024);
         let synth = synth::Synth::new(midi_receiver);
         let sample_rate = 44100;
-        let editor = Some(PistolhotEditor::new(synth.get_params()));
         Self(Some(Data {
             sample_rate,
             synth,
             midi_sender,
-            editor,
         }))
     }
 
@@ -137,9 +134,8 @@ impl Plugin for PistolhotVst {
 
     fn get_editor(&mut self) -> Option<Box<dyn Editor>> {
         let data = self.get_mut_data();
-        data.editor
-            .take()
-            .map(|editor| Box::new(editor) as Box<dyn Editor>)
+        let editor = PistolhotEditor::new(data.synth.get_params());
+        Some(Box::new(editor))
     }
 }
 
