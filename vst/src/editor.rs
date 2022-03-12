@@ -91,6 +91,6 @@ unsafe impl HasRawWindowHandle for VstParent {
     fn raw_window_handle(&self) -> RawWindowHandle {
         let mut handle = raw_window_handle::Win32Handle::empty();
         handle.hwnd = self.0;
-        RawWindowHandle::AppKit(handle)
+        RawWindowHandle::Win32(handle)
     }
 }

@@ -23,9 +23,9 @@ vst = "0.3"
 wmidi = "4.0.6"
 # need patches for egui 0.17
 # TODO switch back to main repo when merged
-baseview = { git = "https://github.com/robbert-vdh/baseview.git", branch = "feature/mouse-event-modifiers", features = ["opengl"]  }
+baseview = { git = "https://github.com/jnises/baseview.git", rev = "5b57af2463ef55c4ac702ef662c3472c328a3c6b", features = ["opengl"]  }
 egui = "0.17"
-egui-baseview = {git = "https://github.com/robbert-vdh/egui-baseview", rev = "afde9c661809ee08d69864caa899246592d93f8c"}
+egui-baseview = {git = "https://github.com/jnises/egui-baseview.git", rev = "d02bbe4759a6e818efbcf7c8b8c7e799b121d45a"}
 
 [profile.release]
 lto = true

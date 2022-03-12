@@ -133,7 +133,7 @@ dependencies = [
 [[package]]
 name = "baseview"
 version = "0.1.0"
-source = "git+https://github.com/robbert-vdh/baseview.git?branch=feature/mouse-event-modifiers#8e7f854c537712a30ba388bdce8764f10b466652"
+source = "git+https://github.com/jnises/baseview.git?rev=5b57af2463ef55c4ac702ef662c3472c328a3c6b#5b57af2463ef55c4ac702ef662c3472c328a3c6b"
 dependencies = [
  "cocoa",
  "core-foundation",
@@ -433,7 +433,7 @@ dependencies = [
 [[package]]
 name = "egui-baseview"
 version = "0.0.0"
-source = "git+https://github.com/robbert-vdh/egui-baseview?rev=afde9c661809ee08d69864caa899246592d93f8c#afde9c661809ee08d69864caa899246592d93f8c"
+source = "git+https://github.com/jnises/egui-baseview.git?rev=d02bbe4759a6e818efbcf7c8b8c7e799b121d45a#d02bbe4759a6e818efbcf7c8b8c7e799b121d45a"
 dependencies = [
  "baseview",
  "copypasta",
