@@ -93,14 +93,16 @@ impl SynthPlayer for Synth {
                     let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
                         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
                     // TODO make g a constant
-                    let g = self.pendulum.g;
+                    let Pendulum { ref mut t_pt, ref mut mass, g, .. } = self.pendulum;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    let displacement = norm_vel * PI / 2.;
+                    let displacement = norm_vel * PI / 4.;
                     let length = get_lengths(self.center_length, chaoticity);
-                    let Pendulum { t_pt, mass, .. } = &mut self.pendulum;
-                    let potential = length.x * (1. - t_pt.x.cos()) + length.y * (1. - t_pt.y.cos());
-                    let desired_potential = (1. - displacement.cos()) * (length.x + length.y);
+                    let mass_sum = mass.x + mass.y;
+                    //let potential = length.x * (1. - t_pt.x.cos()) + length.y * (1. - t_pt.y.cos());
+                    let potential = - g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
+                    //let desired_potential = (1. - displacement.cos()) * (length.x + length.y);
+                    let desired_potential = - g * displacement.cos() * (mass_sum * length.x + mass.y * length.y);
                     let kinetic = desired_potential - potential;
 
                     //let emv = energy - potential;
@@ -112,7 +114,8 @@ impl SynthPlayer for Synth {
                     } else {
                         // just setting both momentums to the same value for now. should they be different?
                         // let the mass be the sum of the two masses for now
-                        let p = f32::sqrt(kinetic * (mass.x + mass.y));
+                        //let p = f32::sqrt(kinetic * (mass.x + mass.y));
+                        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum; 
                         // giving the momentum the same sign as before. does that make sense?
                         t_pt.z = t_pt.z.signum() * p;
                         t_pt.w = t_pt.w.signum() * p;

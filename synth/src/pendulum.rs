@@ -79,7 +79,6 @@ impl Pendulum {
                     // TODO there should at least be something about mass here right?
                     dp0 -= dt0 * friction;
                     dp1 -= dt1 * friction;
-                    // TODO add friction
                     const MAX_D: f32 = 999999f32;
                     vec4(
                         dt0.clamp(-MAX_D, MAX_D),
@@ -94,8 +93,8 @@ impl Pendulum {
                 let k4 = f(&(*t_pt + *step_size * k3));
                 let d = 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
                 *t_pt += *step_size * d;
-                t_pt.z %= 2f32 * PI;
-                t_pt.w %= 2f32 * PI;
+                t_pt.x %= 2f32 * PI;
+                t_pt.y %= 2f32 * PI;
             }
             *time_error -= iterations as f32 * step_size;
         }
