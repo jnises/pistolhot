@@ -40,7 +40,6 @@ pub struct Synth {
     pendulum: Pendulum,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
-    //lowpass: f32,
     lowpass: Option<(u32, biquad::DirectForm1<f32>)>,
     center_length: f32,
 }
@@ -135,9 +134,6 @@ impl SynthPlayer for Synth {
                     }) = self.note_event
                     {
                         if note == held_note {
-                            let friction = release.powi(2);
-                            //self.pendulum.t_pt = Vec4::ZERO;
-                            self.pendulum.friction = friction;
                             self.note_event = None;
                         }
                     }
@@ -176,6 +172,10 @@ impl SynthPlayer for Synth {
         let length = get_lengths(self.center_length, chaoticity);
         self.pendulum.length = length;
         // TODO recalculate the momenta depending on the chaoticity?
+
+        if self.note_event.is_none() {
+            self.pendulum.friction = release.powi(2);
+        }
 
         // produce sound
         let pendulum = &mut self.pendulum;
