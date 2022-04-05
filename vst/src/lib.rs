@@ -1,3 +1,6 @@
+/*
+TODO handle hidpi on mac
+*/
 use std::sync::Arc;
 
 use crossbeam::atomic::AtomicCell;

@@ -1,3 +1,10 @@
+/*
+TODO how to determine float precision?
+TODO change G to improve precision?
+TODO change friction to instead be some sort of energy dissipation
+TODO calculate length only using the first part of pendulum?
+*/
+
 mod params_gui;
 mod pendulum;
 use biquad::{Biquad, ToHertz};
