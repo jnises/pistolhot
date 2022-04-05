@@ -1,5 +1,5 @@
 /*
-TODO handle hidpi on mac
+TODO handle hidpi on windows
 */
 use std::sync::Arc;
 
