@@ -189,6 +189,7 @@ impl SynthPlayer for Synth {
         // TODO recalculate the momenta depending on the chaoticity?
 
         if self.note_event.is_none() {
+            // TODO don't use friction. just set the momentum and theta for more control
             self.pendulum.friction = release.powi(2);
         }
 
