@@ -121,11 +121,19 @@ impl SynthPlayer for Synth {
                         // just setting both momentums to the same value for now. should they be different?
                         // let the mass be the sum of the two masses for now
                         //let p = f32::sqrt(kinetic * (mass.x + mass.y));
-                        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum; 
-                        // giving the momentum the same sign as before. does that make sense?
-                        t_pt.z = t_pt.z.signum() * p;
-                        t_pt.w = t_pt.w.signum() * p;
-                    }
+                        // don't we need to take the length of the pendulum into account?
+                        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
+                        let psum = t_pt.z + t_pt.w;
+                        // TODO should the momentum be split up like this?
+                        if psum > f32::EPSILON {
+                            t_pt.z *= 1f32 / psum * p;
+                            t_pt.w *= 1f32 / psum * p;
+                        } else {
+                            let pd2 = p / 2f32;
+                            t_pt.z = pd2;
+                            t_pt.w = pd2;
+                        }
+                    };
 
                     // self.pendulum.t_pt.z = displacement * g;
                     // self.pendulum.t_pt.w = displacement * g;
