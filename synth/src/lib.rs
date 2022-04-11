@@ -116,6 +116,12 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
     let mass_sum = mass.x + mass.y;
     let potential =
         g * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
+    dbg_value!(potential);
+    // TODO this will override the simulation all the time right? that's not good.
+    // how to handle that better?
+    // can we calculate the energy more correctly?
+    // have some allowed energy range?
+    // lowpass the adjustment?
     if energy > potential {
         let kinetic = energy - potential;
         let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
