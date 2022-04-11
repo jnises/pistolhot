@@ -18,13 +18,39 @@ use wmidi::MidiMessage;
 pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 
 #[derive(Clone)]
+enum NoteState {
+    Pressed(u32),
+    Released { pressed_time: u32, elapsed: u32 },
+}
+
+impl NoteState {
+    fn update(&mut self, time: u32) {
+        match self {
+            NoteState::Pressed(elapsed) | NoteState::Released { elapsed, .. } => *elapsed += time,
+        }
+    }
+
+    fn get_pressed_time(&self) -> u32 {
+        match *self {
+            NoteState::Pressed(time) => time,
+            NoteState::Released { pressed_time, .. } => pressed_time,
+        }
+    }
+}
+
+#[derive(Clone)]
 struct NoteEvent {
     note: wmidi::Note,
+    state: NoteState,
+    velocity: f32,
 }
 
 // TODO handle params using messages instead?
 pub struct Params {
     pub chaoticity: AtomicCell<f32>,
+    pub attack: AtomicCell<f32>,
+    pub decay: AtomicCell<f32>,
+    pub sustain: AtomicCell<f32>,
     pub release: AtomicCell<f32>,
 }
 
@@ -32,6 +58,63 @@ pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
 pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=0.99f32;
 
 const LOWPASS_FREQ: f32 = 10000f32;
+
+fn lerp(from: f32, to: f32, mix: f32) -> f32 {
+    let mixclamp = mix.clamp(0., 1.);
+    from * (1. - mixclamp) + to * mixclamp
+}
+
+fn get_pendulum_x(pendulum: &Pendulum) -> f32 {
+    let tip = pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
+    tip
+}
+
+/// sets the energy of the pendulum
+/// changes the kinetic energy as much as possible, if not enough also adjusts potential
+fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
+    let oldx = get_pendulum_x(pendulum);
+    let Pendulum {
+        g,
+        mass,
+        length,
+        ref mut t_pt,
+        ..
+    } = *pendulum;
+    let mass_sum = mass.x + mass.y;
+    let potential = -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
+    if energy > potential {
+        let kinetic = energy - potential;
+        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
+        let psum = t_pt.z + t_pt.w;
+        // TODO should the momentum be split up like this?
+        if psum > f32::EPSILON {
+            t_pt.z *= 1f32 / psum * p;
+            t_pt.w *= 1f32 / psum * p;
+        } else {
+            let pd2 = p / 2f32;
+            t_pt.z = pd2;
+            t_pt.w = pd2;
+        }
+    } else {
+        t_pt.z = 0.;
+        t_pt.w = 0.;
+        // TODO calculate theta to make the pendulum tip x as close to the old x as possible
+        // simplify by setting both theta to the same value
+        let den = g * (mass_sum * length.x + mass.y * length.y);
+        let theta = if den != 0. {
+            let theta = f32::acos(-energy / den);
+            if oldx < 0. {
+                -theta
+            } else {
+                theta
+            }
+        } else {
+            0.
+        };
+        t_pt.x = theta;
+        t_pt.y = theta;
+    };
+}
 
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
     let b = center_length / (1f32 + chaoticity / 2f32);
@@ -47,32 +130,85 @@ pub struct Synth {
     pendulum: Pendulum,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
-    lowpass: Option<(u32, biquad::DirectForm1<f32>)>,
+    lowpass: (u32, biquad::DirectForm1<f32>),
     center_length: f32,
+    sample_rate: u32,
 }
 
 impl Synth {
     pub fn new(midi_events: MidiChannel) -> Self {
+        let sample_rate = 44100;
         Self {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
                 chaoticity: 0.67f32.into(),
-                release: 0.1f32.into(),
+                attack: 0.1f32.into(),
+                decay: 0.5f32.into(),
+                sustain: 0.5f32.into(),
+                release: 0.5f32.into(),
             }),
-            lowpass: None,
+            lowpass: (
+                0, //< to make sure it is recalculated
+                biquad::DirectForm1::<f32>::new(
+                    biquad::Coefficients::<f32>::from_params(
+                        biquad::Type::LowPass,
+                        sample_rate.hz(),
+                        LOWPASS_FREQ.min(sample_rate as f32 / 2.001f32).hz(),
+                        biquad::Q_BUTTERWORTH_F32,
+                    )
+                    .unwrap(),
+                ),
+            ),
             pendulum: Pendulum {
-                // higher gravity. for better precision
+                // higher gravity. for better precision. (is it really?)
                 g: 9.81f32 * 100000.,
                 mass: vec2(1., 1.),
                 ..Pendulum::default()
             },
             center_length: 1f32,
+            sample_rate,
         }
     }
 
     pub fn get_params(&self) -> Arc<Params> {
         self.params.clone()
+    }
+
+    fn calculate_energy(&self) -> f32 {
+        if let Some(event) = &self.note_event {
+            let displacement = event.velocity * PI / 4.;
+            let length = get_lengths(self.center_length, self.params.chaoticity.load());
+            let Pendulum { g, mass, t_pt, .. } = self.pendulum;
+            let mass_sum = mass.x + mass.y;
+            let potential =
+                -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
+            let pressed_time = match event.state {
+                NoteState::Pressed(elapsed) => elapsed,
+                NoteState::Released { pressed_time, .. } => pressed_time,
+            };
+            let pressed_seconds = pressed_time as f32 / self.sample_rate as f32;
+            let attack = self.params.attack.load();
+            let pressed_value = if pressed_seconds < attack {
+                pressed_seconds / attack
+            } else {
+                let remain = pressed_seconds - attack;
+                let a = f32::min(1., remain / self.params.decay.load());
+                lerp(1., self.params.sustain.load(), remain)
+            };
+            let adsr = event.velocity
+                * match event.state {
+                    NoteState::Pressed(_) => 1.,
+                    NoteState::Released { elapsed, .. } => {
+                        let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
+                        let release = self.params.release.load().max(f32::EPSILON);
+                        lerp(pressed_value, 0., elapsed_seconds / release)
+                    }
+                };
+            potential * adsr
+        } else {
+            0.
+        }
     }
 }
 
@@ -82,6 +218,9 @@ pub trait SynthPlayer {
 
 impl SynthPlayer for Synth {
     fn play(&mut self, sample_rate: u32, channels: usize, output: &mut [f32]) {
+        debug_assert!(sample_rate > 0);
+        // TODO check if sample_rate has changed, and recalculate stuff?
+        self.sample_rate = sample_rate;
         let chaoticity = self
             .params
             .chaoticity
@@ -99,57 +238,33 @@ impl SynthPlayer for Synth {
                     let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
                         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
                     // TODO make g a constant
-                    let Pendulum { ref mut t_pt, ref mut mass, g, .. } = self.pendulum;
+                    let Pendulum {
+                        ref mut t_pt,
+                        ref mut mass,
+                        g,
+                        ..
+                    } = self.pendulum;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    let displacement = norm_vel * PI / 4.;
-                    let length = get_lengths(self.center_length, chaoticity);
-                    let mass_sum = mass.x + mass.y;
-                    //let potential = length.x * (1. - t_pt.x.cos()) + length.y * (1. - t_pt.y.cos());
-                    let potential = - g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
-                    //let desired_potential = (1. - displacement.cos()) * (length.x + length.y);
-                    let desired_potential = - g * displacement.cos() * (mass_sum * length.x + mass.y * length.y);
-                    let kinetic = desired_potential - potential;
-
-                    //let emv = energy - potential;
-                    if kinetic < 0f32 {
-                        // potential energy too high to adjust using momentum
-                        // TODO add some temporary friction until we are at the requested energy level
-                        t_pt.z = 0f32;
-                        t_pt.w = 0f32;
-                    } else {
-                        // just setting both momentums to the same value for now. should they be different?
-                        // let the mass be the sum of the two masses for now
-                        //let p = f32::sqrt(kinetic * (mass.x + mass.y));
-                        // don't we need to take the length of the pendulum into account?
-                        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
-                        let psum = t_pt.z + t_pt.w;
-                        // TODO should the momentum be split up like this?
-                        if psum > f32::EPSILON {
-                            t_pt.z *= 1f32 / psum * p;
-                            t_pt.w *= 1f32 / psum * p;
-                        } else {
-                            let pd2 = p / 2f32;
-                            t_pt.z = pd2;
-                            t_pt.w = pd2;
-                        }
-                    };
-
-                    // self.pendulum.t_pt.z = displacement * g;
-                    // self.pendulum.t_pt.w = displacement * g;
-                    //self.pendulum.d_t_pt = Vec4::ZERO;
-                    //self.pendulum.d_t_pt = vec4(displacement, displacement, 0., 0.) / 44100f32;
-                    //self.pendulum.d_t_pt = vec4(1., 1., 1., 1.) * 0.0001;//1., 1.);
                     self.pendulum.friction = 0f32;
-                    self.note_event = Some(NoteEvent { note });
+                    self.note_event = Some(NoteEvent {
+                        note,
+                        state: NoteState::Pressed(0),
+                        velocity: norm_vel,
+                    });
                 }
                 wmidi::MidiMessage::NoteOff(_, note, _) => {
                     if let Some(NoteEvent {
-                        note: held_note, ..
+                        note: held_note,
+                        ref mut state,
+                        ..
                     }) = self.note_event
                     {
                         if note == held_note {
-                            self.note_event = None;
+                            *state = NoteState::Released {
+                                pressed_time: state.get_pressed_time(),
+                                elapsed: 0,
+                            };
                         }
                     }
                 }
@@ -157,26 +272,22 @@ impl SynthPlayer for Synth {
             }
         }
 
-        match self.lowpass {
-            Some((srate, _)) if srate == sample_rate => {}
-            _ => {
-                self.lowpass = Some((
-                    sample_rate,
-                    biquad::DirectForm1::<f32>::new(
-                        biquad::Coefficients::<f32>::from_params(
-                            // TODO use singlepole instead?
-                            biquad::Type::LowPass,
-                            //biquad::Type::SinglePoleLowPass,
-                            sample_rate.hz(),
-                            LOWPASS_FREQ.min(sample_rate as f32 / 2.001f32).hz(),
-                            biquad::Q_BUTTERWORTH_F32,
-                        )
-                        .unwrap(),
-                    ),
-                ));
-            }
+        if self.lowpass.0 != sample_rate {
+            self.lowpass = (
+                sample_rate,
+                biquad::DirectForm1::<f32>::new(
+                    biquad::Coefficients::<f32>::from_params(
+                        // TODO use singlepole instead?
+                        biquad::Type::LowPass,
+                        //biquad::Type::SinglePoleLowPass,
+                        sample_rate.hz(),
+                        LOWPASS_FREQ.min(sample_rate as f32 / 2.001f32).hz(),
+                        biquad::Q_BUTTERWORTH_F32,
+                    )
+                    .unwrap(),
+                ),
+            );
         }
-        let lowpass = &mut self.lowpass.as_mut().unwrap().1;
 
         // TODO m?? is that mass?
         //let m = vec2(1., 1.);
@@ -188,24 +299,28 @@ impl SynthPlayer for Synth {
         self.pendulum.length = length;
         // TODO recalculate the momenta depending on the chaoticity?
 
-        if self.note_event.is_none() {
-            // TODO don't use friction. just set the momentum and theta for more control
-            self.pendulum.friction = release.powi(2);
-        }
+        // if self.note_event.is_none() {
+        //     // TODO don't use friction. just set the momentum and theta for more control
+        //     self.pendulum.friction = release.powi(2);
+        // }
 
         // produce sound
-        let pendulum = &mut self.pendulum;
         for frame in output.chunks_exact_mut(channels) {
-            let tip = pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
-            let full_length = pendulum.length.x + pendulum.length.y;
+            // TODO should this be done in the rk4 loop in the pendulum code instead?
+            let energy = self.calculate_energy();
+            adjust_energy(&mut self.pendulum, energy);
+            let tip = get_pendulum_x(&self.pendulum);
+            let full_length = self.pendulum.length.x + self.pendulum.length.y;
             let a = tip / full_length;
-            // let a = pendulum.t_pt.x.sin();
-            let lowpassed = lowpass.run(a);
+            let lowpassed = self.lowpass.1.run(a);
             let clipped = lowpassed.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
-            pendulum.update(1. / sample_rate as f32);
+            self.pendulum.update(1. / sample_rate as f32);
+            if let Some(event) = &mut self.note_event {
+                event.state.update(1);
+            }
         }
     }
 }

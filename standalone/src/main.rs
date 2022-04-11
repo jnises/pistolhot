@@ -2,7 +2,6 @@
 
 use app::Pistolhot;
 
-
 fn main() {
     use eframe::{egui::Vec2, epi};
 
