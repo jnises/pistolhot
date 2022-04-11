@@ -5,14 +5,14 @@ TODO change friction to instead be some sort of energy dissipation
 TODO calculate length only using the first part of pendulum?
 */
 
-mod params_gui;
 mod dbg_gui;
+mod params_gui;
 mod pendulum;
 use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
+pub use dbg_gui::dbg_gui;
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
-pub use dbg_gui::dbg_gui;
 use pendulum::Pendulum;
 use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
 use wmidi::MidiMessage;
@@ -218,7 +218,7 @@ impl Synth {
             let mass_sum = mass.x + mass.y;
             let desired_potential =
                 g * VELOCITY_WEIGHT * event.velocity * (mass_sum * length.x + mass.y * length.y);
-            dbg_value("desired_potential", desired_potential);
+            dbg_value!(desired_potential);
             // let potential =
             //     -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
             let pressed_time = match event.state {
@@ -227,29 +227,24 @@ impl Synth {
             };
             let pressed_seconds = pressed_time as f32 / self.sample_rate as f32;
             let attack = self.params.get_attack();
-            dbg_value!(attack);
             let pressed_value = if pressed_seconds < attack {
                 pressed_seconds / attack
             } else {
                 let remain = pressed_seconds - attack;
                 let decay = self.params.get_decay();
-                dbg_value!(decay);
                 let a = remain / decay;
                 let sustain = self.params.get_sustain();
-                dbg_value!(sustain);
                 lerp(1., sustain, a)
             };
-            dbg_value!(pressed_value);
-            let adsr = pressed_value * match event.state {
+            let adsr = pressed_value
+                * match event.state {
                     NoteState::Pressed(_) => 1.,
                     NoteState::Released { elapsed, .. } => {
                         let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
                         let release = self.params.get_release().max(f32::EPSILON);
-                        dbg_value!(release);
                         lerp(1., 0., elapsed_seconds / release)
                     }
-            };
-            dbg_value!(adsr);
+                };
             desired_potential * adsr
         } else {
             0.
@@ -301,10 +296,12 @@ impl SynthPlayer for Synth {
                     }) = self.note_event
                     {
                         if note == held_note {
-                            *state = NoteState::Released {
-                                pressed_time: state.get_pressed_time(),
-                                elapsed: 0,
-                            };
+                            if let NoteState::Pressed(elapsed) = *state {
+                                *state = NoteState::Released {
+                                    pressed_time: elapsed,
+                                    elapsed: 0,
+                                };
+                            }
                         }
                     }
                 }
