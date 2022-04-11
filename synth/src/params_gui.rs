@@ -3,7 +3,7 @@ use std::ops::RangeInclusive;
 use crossbeam::atomic::AtomicCell;
 use egui::Ui;
 
-use crate::{Params, CHAOTICITY_RANGE, RELEASE_RANGE};
+use crate::{Params, ATTACK_RANGE, CHAOTICITY_RANGE, DECAY_RANGE, RELEASE_RANGE, SUSTAIN_RANGE};
 
 fn param(ui: &mut Ui, param: &AtomicCell<f32>, name: &str, range: RangeInclusive<f32>) {
     ui.label(name);
@@ -15,6 +15,9 @@ fn param(ui: &mut Ui, param: &AtomicCell<f32>, name: &str, range: RangeInclusive
 pub fn params_gui(ui: &mut Ui, params: &Params) {
     ui.vertical(|ui| {
         param(ui, &params.chaoticity, "chaoticity:", CHAOTICITY_RANGE);
+        param(ui, &params.attack, "attack:", ATTACK_RANGE);
+        param(ui, &params.decay, "decay:", DECAY_RANGE);
+        param(ui, &params.sustain, "sustain:", SUSTAIN_RANGE);
         param(ui, &params.release, "release:", RELEASE_RANGE);
     });
 }

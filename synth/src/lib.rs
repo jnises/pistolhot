@@ -45,6 +45,12 @@ struct NoteEvent {
     velocity: f32,
 }
 
+pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
+pub const ATTACK_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+pub const DECAY_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+pub const SUSTAIN_RANGE: RangeInclusive<f32> = 0f32..=1f32;
+pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+
 // TODO handle params using messages instead?
 pub struct Params {
     pub chaoticity: AtomicCell<f32>,
@@ -54,8 +60,31 @@ pub struct Params {
     pub release: AtomicCell<f32>,
 }
 
-pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
-pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=0.99f32;
+impl Params {
+    fn get_attack(&self) -> f32 {
+        self.attack
+            .load()
+            .clamp(*ATTACK_RANGE.start(), *ATTACK_RANGE.end())
+    }
+
+    fn get_decay(&self) -> f32 {
+        self.decay
+            .load()
+            .clamp(*DECAY_RANGE.start(), *DECAY_RANGE.end())
+    }
+
+    fn get_sustain(&self) -> f32 {
+        self.sustain
+            .load()
+            .clamp(*SUSTAIN_RANGE.start(), *SUSTAIN_RANGE.end())
+    }
+
+    fn get_release(&self) -> f32 {
+        self.release
+            .load()
+            .clamp(*RELEASE_RANGE.start(), *RELEASE_RANGE.end())
+    }
+}
 
 const LOWPASS_FREQ: f32 = 10000f32;
 
@@ -81,7 +110,8 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
         ..
     } = *pendulum;
     let mass_sum = mass.x + mass.y;
-    let potential = -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
+    let potential =
+        g * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
     if energy > potential {
         let kinetic = energy - potential;
         let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
@@ -102,7 +132,8 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
         // simplify by setting both theta to the same value
         let den = g * (mass_sum * length.x + mass.y * length.y);
         let theta = if den != 0. {
-            let theta = f32::acos(-energy / den);
+            // TODO should be 0 if energy is 0
+            let theta = f32::acos(1. - energy / den);
             if oldx < 0. {
                 -theta
             } else {
@@ -177,35 +208,37 @@ impl Synth {
 
     fn calculate_energy(&self) -> f32 {
         if let Some(event) = &self.note_event {
-            let displacement = event.velocity * PI / 4.;
+            const VELOCITY_GAIN: f32 = 1.;
             let length = get_lengths(self.center_length, self.params.chaoticity.load());
             let Pendulum { g, mass, t_pt, .. } = self.pendulum;
             let mass_sum = mass.x + mass.y;
-            let potential =
-                -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
+            let desired_potential =
+                g * VELOCITY_GAIN * event.velocity * (mass_sum * length.x + mass.y * length.y);
+            // let potential =
+            //     -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
             let pressed_time = match event.state {
                 NoteState::Pressed(elapsed) => elapsed,
                 NoteState::Released { pressed_time, .. } => pressed_time,
             };
             let pressed_seconds = pressed_time as f32 / self.sample_rate as f32;
-            let attack = self.params.attack.load();
+            let attack = self.params.get_attack();
             let pressed_value = if pressed_seconds < attack {
                 pressed_seconds / attack
             } else {
                 let remain = pressed_seconds - attack;
-                let a = f32::min(1., remain / self.params.decay.load());
-                lerp(1., self.params.sustain.load(), remain)
+                let a = remain / self.params.get_decay();
+                lerp(1., self.params.get_sustain(), a)
             };
             let adsr = event.velocity
                 * match event.state {
                     NoteState::Pressed(_) => 1.,
                     NoteState::Released { elapsed, .. } => {
                         let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
-                        let release = self.params.release.load().max(f32::EPSILON);
+                        let release = self.params.get_release().max(f32::EPSILON);
                         lerp(pressed_value, 0., elapsed_seconds / release)
                     }
                 };
-            potential * adsr
+            desired_potential * adsr
         } else {
             0.
         }
@@ -226,11 +259,6 @@ impl SynthPlayer for Synth {
             .chaoticity
             .load()
             .clamp(*CHAOTICITY_RANGE.start(), *CHAOTICITY_RANGE.end());
-        let release = self
-            .params
-            .release
-            .load()
-            .clamp(*RELEASE_RANGE.start(), *RELEASE_RANGE.end());
         // pump midi messages
         for message in self.midi_events.try_iter() {
             match message {
