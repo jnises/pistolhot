@@ -212,12 +212,12 @@ impl Synth {
 
     fn calculate_energy(&self) -> f32 {
         if let Some(event) = &self.note_event {
-            const VELOCITY_GAIN: f32 = 1.;
+            const VELOCITY_WEIGHT: f32 = 0.5;
             let length = get_lengths(self.center_length, self.params.chaoticity.load());
             let Pendulum { g, mass, t_pt, .. } = self.pendulum;
             let mass_sum = mass.x + mass.y;
             let desired_potential =
-                g * VELOCITY_GAIN * event.velocity * (mass_sum * length.x + mass.y * length.y);
+                g * VELOCITY_WEIGHT * event.velocity * (mass_sum * length.x + mass.y * length.y);
             dbg_value("desired_potential", desired_potential);
             // let potential =
             //     -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
@@ -227,22 +227,29 @@ impl Synth {
             };
             let pressed_seconds = pressed_time as f32 / self.sample_rate as f32;
             let attack = self.params.get_attack();
+            dbg_value!(attack);
             let pressed_value = if pressed_seconds < attack {
                 pressed_seconds / attack
             } else {
                 let remain = pressed_seconds - attack;
-                let a = remain / self.params.get_decay();
-                lerp(1., self.params.get_sustain(), a)
+                let decay = self.params.get_decay();
+                dbg_value!(decay);
+                let a = remain / decay;
+                let sustain = self.params.get_sustain();
+                dbg_value!(sustain);
+                lerp(1., sustain, a)
             };
-            let adsr = event.velocity
-                * match event.state {
+            dbg_value!(pressed_value);
+            let adsr = pressed_value * match event.state {
                     NoteState::Pressed(_) => 1.,
                     NoteState::Released { elapsed, .. } => {
                         let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
                         let release = self.params.get_release().max(f32::EPSILON);
-                        lerp(pressed_value, 0., elapsed_seconds / release)
+                        dbg_value!(release);
+                        lerp(1., 0., elapsed_seconds / release)
                     }
-                };
+            };
+            dbg_value!(adsr);
             desired_potential * adsr
         } else {
             0.
@@ -341,7 +348,7 @@ impl SynthPlayer for Synth {
         for frame in output.chunks_exact_mut(channels) {
             // TODO should this be done in the rk4 loop in the pendulum code instead?
             let energy = self.calculate_energy();
-            dbg_value("energy", energy);
+            dbg_value!(energy);
             adjust_energy(&mut self.pendulum, energy);
             let tip = get_pendulum_x(&self.pendulum);
             let full_length = self.pendulum.length.x + self.pendulum.length.y;
