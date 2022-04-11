@@ -6,14 +6,18 @@ TODO calculate length only using the first part of pendulum?
 */
 
 mod params_gui;
+mod dbg_gui;
 mod pendulum;
 use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
+pub use dbg_gui::dbg_gui;
 use pendulum::Pendulum;
 use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
 use wmidi::MidiMessage;
+
+use crate::dbg_gui::dbg_value;
 
 pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 
@@ -214,6 +218,7 @@ impl Synth {
             let mass_sum = mass.x + mass.y;
             let desired_potential =
                 g * VELOCITY_GAIN * event.velocity * (mass_sum * length.x + mass.y * length.y);
+            dbg_value("desired_potential", desired_potential);
             // let potential =
             //     -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
             let pressed_time = match event.state {
@@ -336,6 +341,7 @@ impl SynthPlayer for Synth {
         for frame in output.chunks_exact_mut(channels) {
             // TODO should this be done in the rk4 loop in the pendulum code instead?
             let energy = self.calculate_energy();
+            dbg_value("energy", energy);
             adjust_energy(&mut self.pendulum, energy);
             let tip = get_pendulum_x(&self.pendulum);
             let full_length = self.pendulum.length.x + self.pendulum.length.y;

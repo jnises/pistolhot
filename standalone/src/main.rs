@@ -14,7 +14,7 @@ fn main() {
             drag_and_drop_support: false,
             initial_window_size: Some(Vec2 {
                 x: 400f32,
-                y: 500f32,
+                y: 700f32,
             }),
             ..Default::default()
         },
