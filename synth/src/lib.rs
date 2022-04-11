@@ -117,25 +117,105 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
     let potential =
         g * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
     dbg_value!(potential);
+    let kinetic = (mass.y * length.y.powi(2) * t_pt.z.powi(2)
+        + mass_sum * length.x.powi(2) * t_pt.w.powi(2)
+        - 2. * mass.y * mass.x * mass.y * t_pt.z * t_pt.w * f32::cos(t_pt.x - t_pt.y))
+        / (2.
+            * mass.y
+            * length.x.powi(2)
+            * length.y.powi(2)
+            * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
+    dbg_value!(kinetic);
+    let current_energy = kinetic + potential;
+    dbg_value!(current_energy);
     // TODO this will override the simulation all the time right? that's not good.
     // how to handle that better?
     // can we calculate the energy more correctly?
     // have some allowed energy range?
     // lowpass the adjustment?
     if energy > potential {
+        dbg_value("e>p", 1.);
         let kinetic = energy - potential;
-        let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
-        let psum = t_pt.z + t_pt.w;
-        // TODO should the momentum be split up like this?
-        if psum > f32::EPSILON {
-            t_pt.z *= 1f32 / psum * p;
-            t_pt.w *= 1f32 / psum * p;
-        } else {
-            let pd2 = p / 2f32;
-            t_pt.z = pd2;
-            t_pt.w = pd2;
+
+        // wip here
+
+        // let kinetic = (mass.y * length.y.powi(2) * t_pt.z.powi(2)
+        //                + mass_sum * length.x.powi(2) * t_pt.w.powi(2)
+        //                - 2. * mass.y * mass.x * mass.y * t_pt.z * t_pt.w * f32::cos(t_pt.x - t_pt.y))
+        //     / (2.
+        //        * mass.y
+        //        * length.x.powi(2)
+        //        * length.y.powi(2)
+        //        * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
+
+        let a = kinetic
+            * (2.
+                * mass.y
+                * length.x.powi(2)
+                * length.y.powi(2)
+                * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
+        // TODO handle a < 0?
+        let p0_den = mass.y.sqrt() * length.y;
+        // TODO handle length.y == 0?
+        let mut new_p0 = f32::sqrt(a) / p0_den;
+        if t_pt.z.is_sign_positive() != new_p0.is_sign_positive() {
+            new_p0 *= -1.;
         }
-    } else {
+
+        let h = f32::cos(t_pt.x - t_pt.y);
+        let p1_den = length.x.powi(2) * mass_sum;
+        // TODO handle length.x == 0
+        let mut new_p1 = (mass.y * new_p0 * mass.x * h
+            - f32::sqrt(
+                a * length.x.powi(2) * mass_sum
+                    - mass.y
+                        * new_p0.powi(2)
+                        * (mass.y * length.y.powi(2) * length.x.powi(2)
+                            - mass.y * mass.x.powi(2) * h.powi(2)
+                            + length.y.powi(2) * mass.x * length.x.powi(2)),
+            ))
+            / p1_den;
+        if new_p1.is_sign_positive() != t_pt.w.is_sign_positive() {
+            new_p1 *= -1.;
+        }
+        t_pt.z = new_p0;
+        t_pt.w = new_p1;
+        //let pratio = t_pt.y / t_pt.z;
+        //let den2 = mass.y * (length.y.powi(2) +
+        //let den = f32::sqrt(
+
+        // let new_p0 = t_pt.z.signum() * f32::sqrt(kinetic * (2.
+        //        * mass.y
+        //        * length.x.powi(2)
+        //        * length.y.powi(2)
+        //                                                     * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)))) /
+
+        //         kinetic * (2.
+        //        * mass.y
+        //        * length.x.powi(2)
+        //        * length.y.powi(2)
+        //            * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)))
+        //     == (mass.y * length.y.powi(2) * t_pt.z.powi(2)
+        //                + mass_sum * length.x.powi(2) * t_pt.w.powi(2)
+        //                - 2. * mass.y * mass.x * mass.y * t_pt.z * t_pt.w * f32::cos(t_pt.x - t_pt.y))
+
+        // wip ends
+
+        // let p = f32::sqrt(kinetic * 2f32 / mass_sum) * mass_sum;
+        // TODO should the momentum be split up like this?
+        //let psum = t_pt.z + t_pt.w;
+        // if psum > f32::EPSILON {
+        //     t_pt.z *= 1f32 / psum * p;
+        //     t_pt.w *= 1f32 / psum * p;
+        // } else {
+        //     let pd2 = p / 2f32;
+        //     t_pt.z = pd2;
+        //     t_pt.w = pd2;
+        // }
+    }
+    else {
+        // TODO this makes things sound bad. fix. using regulator probably
+        dbg_value("e>p", 0.);
         t_pt.z = 0.;
         t_pt.w = 0.;
         // TODO calculate theta to make the pendulum tip x as close to the old x as possible
@@ -154,7 +234,7 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
         };
         t_pt.x = theta;
         t_pt.y = theta;
-    };
+    }
 }
 
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
