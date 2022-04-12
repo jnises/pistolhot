@@ -2188,6 +2188,7 @@ dependencies = [
  "egui",
  "glam",
  "once_cell",
+ "static_assertions",
  "wmidi",
 ]
 

@@ -16,6 +16,7 @@ pub use params_gui::params_gui;
 use pendulum::Pendulum;
 use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
 use wmidi::MidiMessage;
+use static_assertions::const_assert;
 
 use crate::dbg_gui::dbg_value;
 
@@ -102,10 +103,21 @@ fn get_pendulum_x(pendulum: &Pendulum) -> f32 {
     tip
 }
 
+// wolfram alpha kinetic energy in terms for theta and canonical momenta
+// k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * p_2^2  -  2 * m_2 * l_1 * l_2 * p_1 * p_2 * cos(theta_1 - theta_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(theta_1 - theta_2)^2))
+
+// assume p_2 = p_1 * c
+// k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * (p_1 * c)^2  -  2 * m_2 * l_1 * l_2 * p_1 * (p_1 * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
+
+// k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
+// k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t)^2))
+
+
+
 /// sets the energy of the pendulum
-/// changes the kinetic energy as much as possible, if not enough also adjusts potential
+/// changes the kinetic energy only
 fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
-    let oldx = get_pendulum_x(pendulum);
+    //let oldx = get_pendulum_x(pendulum);
     let Pendulum {
         g,
         mass,
@@ -117,26 +129,37 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
     let potential =
         g * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
     dbg_value!(potential);
-    let kinetic = (mass.y * length.y.powi(2) * t_pt.z.powi(2)
-        + mass_sum * length.x.powi(2) * t_pt.w.powi(2)
-        - 2. * mass.y * mass.x * mass.y * t_pt.z * t_pt.w * f32::cos(t_pt.x - t_pt.y))
-        / (2.
-            * mass.y
-            * length.x.powi(2)
-            * length.y.powi(2)
-            * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
-    dbg_value!(kinetic);
-    let current_energy = kinetic + potential;
-    dbg_value!(current_energy);
+    // let kinetic = (mass.y * length.y.powi(2) * t_pt.z.powi(2)
+    //     + mass_sum * length.x.powi(2) * t_pt.w.powi(2)
+    //     - 2. * mass.y * mass.x * mass.y * t_pt.z * t_pt.w * f32::cos(t_pt.x - t_pt.y))
+    //     / (2.
+    //         * mass.y
+    //         * length.x.powi(2)
+    //         * length.y.powi(2)
+    //         * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
+    // dbg_value!(kinetic);
+    // let current_energy = kinetic + potential;
+    // dbg_value!(current_energy);
     // TODO this will override the simulation all the time right? that's not good.
     // how to handle that better?
     // can we calculate the energy more correctly?
     // have some allowed energy range?
     // lowpass the adjustment?
     if energy > potential {
-        dbg_value("e>p", 1.);
+        //dbg_value("e>p", 1.);
         let kinetic = energy - potential;
 
+        let thetadiff = t_pt.x - t_pt.y;
+
+        // TODO handle t_pt.z == 0 better, 
+        let c = t_pt.w / (t_pt.z.signum() * t_pt.z.abs().max(f32::EPSILON));
+        let pdet = f32::sqrt(c.powi(2) * length.x.powi(2) * mass_sum - 2. * c * length.y * length.x * mass.y * thetadiff.cos() + length.y.powi(2) * mass.y);
+        let p = std::f32::consts::SQRT_2 * kinetic.sqrt() * length.x * length.y * mass.y.sqrt() * f32::sqrt(mass.y * thetadiff.sin().powi(2) + mass.x) / pdet;
+        dbg_value!(p);
+
+        t_pt.z = if p.is_sign_positive() != t_pt.z.is_sign_positive() { -p } else { p };
+        t_pt.w = c * t_pt.z;
+        
         // wip here
 
         // let kinetic = (mass.y * length.y.powi(2) * t_pt.z.powi(2)
@@ -148,38 +171,38 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
         //        * length.y.powi(2)
         //        * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
 
-        let a = kinetic
-            * (2.
-                * mass.y
-                * length.x.powi(2)
-                * length.y.powi(2)
-                * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
-        // TODO handle a < 0?
-        let p0_den = mass.y.sqrt() * length.y;
-        // TODO handle length.y == 0?
-        let mut new_p0 = f32::sqrt(a) / p0_den;
-        if t_pt.z.is_sign_positive() != new_p0.is_sign_positive() {
-            new_p0 *= -1.;
-        }
+        // let a = kinetic
+        //     * (2.
+        //         * mass.y
+        //         * length.x.powi(2)
+        //         * length.y.powi(2)
+        //         * (mass.x + mass.y * f32::sin(t_pt.x - t_pt.y).powi(2)));
+        // // TODO handle a < 0?
+        // let p0_den = mass.y.sqrt() * length.y;
+        // // TODO handle length.y == 0?
+        // let mut new_p0 = f32::sqrt(a) / p0_den;
+        // if t_pt.z.is_sign_positive() != new_p0.is_sign_positive() {
+        //     new_p0 *= -1.;
+        // }
 
-        let h = f32::cos(t_pt.x - t_pt.y);
-        let p1_den = length.x.powi(2) * mass_sum;
-        // TODO handle length.x == 0
-        let mut new_p1 = (mass.y * new_p0 * mass.x * h
-            - f32::sqrt(
-                a * length.x.powi(2) * mass_sum
-                    - mass.y
-                        * new_p0.powi(2)
-                        * (mass.y * length.y.powi(2) * length.x.powi(2)
-                            - mass.y * mass.x.powi(2) * h.powi(2)
-                            + length.y.powi(2) * mass.x * length.x.powi(2)),
-            ))
-            / p1_den;
-        if new_p1.is_sign_positive() != t_pt.w.is_sign_positive() {
-            new_p1 *= -1.;
-        }
-        t_pt.z = new_p0;
-        t_pt.w = new_p1;
+        // let h = f32::cos(t_pt.x - t_pt.y);
+        // let p1_den = length.x.powi(2) * mass_sum;
+        // // TODO handle length.x == 0
+        // let mut new_p1 = (mass.y * new_p0 * mass.x * h
+        //     - f32::sqrt(
+        //         a * length.x.powi(2) * mass_sum
+        //             - mass.y
+        //                 * new_p0.powi(2)
+        //                 * (mass.y * length.y.powi(2) * length.x.powi(2)
+        //                     - mass.y * mass.x.powi(2) * h.powi(2)
+        //                     + length.y.powi(2) * mass.x * length.x.powi(2)),
+        //     ))
+        //     / p1_den;
+        // if new_p1.is_sign_positive() != t_pt.w.is_sign_positive() {
+        //     new_p1 *= -1.;
+        // }
+        // t_pt.z = new_p0;
+        // t_pt.w = new_p1;
         //let pratio = t_pt.y / t_pt.z;
         //let den2 = mass.y * (length.y.powi(2) +
         //let den = f32::sqrt(
@@ -215,25 +238,25 @@ fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
     }
     else {
         // TODO this makes things sound bad. fix. using regulator probably
-        dbg_value("e>p", 0.);
-        t_pt.z = 0.;
-        t_pt.w = 0.;
-        // TODO calculate theta to make the pendulum tip x as close to the old x as possible
-        // simplify by setting both theta to the same value
-        let den = g * (mass_sum * length.x + mass.y * length.y);
-        let theta = if den != 0. {
-            // TODO should be 0 if energy is 0
-            let theta = f32::acos(1. - energy / den);
-            if oldx < 0. {
-                -theta
-            } else {
-                theta
-            }
-        } else {
-            0.
-        };
-        t_pt.x = theta;
-        t_pt.y = theta;
+        // dbg_value("e>p", 0.);
+        // t_pt.z = 0.;
+        // t_pt.w = 0.;
+        // // TODO calculate theta to make the pendulum tip x as close to the old x as possible
+        // // simplify by setting both theta to the same value
+        // let den = g * (mass_sum * length.x + mass.y * length.y);
+        // let theta = if den != 0. {
+        //     // TODO should be 0 if energy is 0
+        //     let theta = f32::acos(1. - energy / den);
+        //     if oldx < 0. {
+        //         -theta
+        //     } else {
+        //         theta
+        //     }
+        // } else {
+        //     0.
+        // };
+        // t_pt.x = theta;
+        // t_pt.y = theta;
     }
 }
 
@@ -299,6 +322,7 @@ impl Synth {
     fn calculate_energy(&self) -> f32 {
         if let Some(event) = &self.note_event {
             const VELOCITY_WEIGHT: f32 = 0.5;
+            const_assert!(VELOCITY_WEIGHT >= 0. && VELOCITY_WEIGHT <= 2.);
             let length = get_lengths(self.center_length, self.params.chaoticity.load());
             let Pendulum { g, mass, t_pt, .. } = self.pendulum;
             let mass_sum = mass.x + mass.y;
