@@ -21,6 +21,12 @@ impl Default for Simulator {
 }
 
 impl Simulator {
+    pub fn get_normalized_x(&self) -> f32 {
+        let Self { pendulum, .. } = self;
+        let tip = pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
+        tip / (pendulum.length.x  + pendulum.length.y)
+    }
+    
     pub fn update(&mut self, elapsed: f32) {
         let Self {
             ref mut pendulum,

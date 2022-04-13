@@ -106,11 +106,6 @@ fn lerp(from: f32, to: f32, mix: f32) -> f32 {
     from * (1. - mixclamp) + to * mixclamp
 }
 
-fn get_pendulum_x(pendulum: &Pendulum) -> f32 {
-    let tip = pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
-    tip
-}
-
 // wolfram alpha kinetic energy in terms for theta and canonical momenta
 // k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * p_2^2  -  2 * m_2 * l_1 * l_2 * p_1 * p_2 * cos(theta_1 - theta_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(theta_1 - theta_2)^2))
 
@@ -323,15 +318,12 @@ impl SynthPlayer for Synth {
             let energy = self.calculate_energy();
             dbg_value!(energy);
             self.simulator.adjust_energy(energy);
-            let tip = get_pendulum_x(&self.simulator.pendulum);
-            let full_length = self.simulator.pendulum.length.x + self.simulator.pendulum.length.y;
-            let a = tip / full_length;
+            let a = self.simulator.get_normalized_x();
             let lowpassed = self.lowpass.1.run(a);
             let clipped = lowpassed.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
-            // TODO let the simulator handle its own update
             self.simulator.update(1. / sample_rate as f32);
             if let Some(event) = &mut self.note_event {
                 event.state.update(1);
