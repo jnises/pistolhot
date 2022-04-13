@@ -23,6 +23,11 @@ use wmidi::MidiMessage;
 
 use crate::dbg_gui::dbg_value;
 
+fn u7_to_f32(value: wmidi::U7) -> f32 {
+    (u8::from(value) - u8::from(wmidi::U7::MIN)) as f32
+        / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
+}
+
 pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 
 #[derive(Clone)]
@@ -238,11 +243,11 @@ impl SynthPlayer for Synth {
         for message in self.midi_events.try_iter() {
             match message {
                 wmidi::MidiMessage::NoteOn(_, note, velocity) => {
-                    let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
-                        / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
+                    let norm_vel = u7_to_f32(velocity);
                     // TODO make g a constant
                     // TODO calculate length better. do a few components of the large amplitude equation
-                    self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * self.simulator.pendulum.g;
+                    self.center_length =
+                        (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * self.simulator.pendulum.g;
                     self.note_event = Some(NoteEvent {
                         note,
                         state: NoteState::Pressed(0),
@@ -265,6 +270,16 @@ impl SynthPlayer for Synth {
                             }
                         }
                     }
+                }
+                wmidi::MidiMessage::ControlChange(
+                    _,
+                    wmidi::ControlFunction::MODULATION_WHEEL,
+                    value,
+                ) => {
+                    let norm_value = u7_to_f32(value);
+                    let chaoticity = CHAOTICITY_RANGE.start()
+                        + norm_value * (CHAOTICITY_RANGE.end() - CHAOTICITY_RANGE.start());
+                    self.params.chaoticity.store(chaoticity);
                 }
                 _ => {}
             }
