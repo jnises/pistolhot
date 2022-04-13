@@ -171,8 +171,6 @@ impl Synth {
             let desired_potential =
                 g * VELOCITY_WEIGHT * event.velocity * (mass_sum * length.x + mass.y * length.y);
             dbg_value!(desired_potential);
-            // let potential =
-            //     -g * (mass_sum * length.x * t_pt.x.cos() + mass.y * length.y * t_pt.y.cos());
             let pressed_time = match event.state {
                 NoteState::Pressed(elapsed) => elapsed,
                 NoteState::Released { pressed_time, .. } => pressed_time,
