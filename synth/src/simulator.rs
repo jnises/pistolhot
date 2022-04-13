@@ -23,10 +23,11 @@ impl Default for Simulator {
 impl Simulator {
     pub fn get_normalized_x(&self) -> f32 {
         let Self { pendulum, .. } = self;
-        let tip = pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
-        tip / (pendulum.length.x  + pendulum.length.y)
+        let tip =
+            pendulum.t_pt.x.sin() * pendulum.length.x + pendulum.t_pt.y.sin() * pendulum.length.y;
+        tip / (pendulum.length.x + pendulum.length.y)
     }
-    
+
     pub fn update(&mut self, elapsed: f32) {
         let Self {
             ref mut pendulum,
@@ -43,6 +44,15 @@ impl Simulator {
             *time_error -= iterations as f32 * step_size;
         }
     }
+
+    // wolfram alpha kinetic energy in terms for theta and canonical momenta
+    // k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * p_2^2  -  2 * m_2 * l_1 * l_2 * p_1 * p_2 * cos(theta_1 - theta_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(theta_1 - theta_2)^2))
+
+    // assume p_2 = p_1 * c
+    // k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * (p_1 * c)^2  -  2 * m_2 * l_1 * l_2 * p_1 * (p_1 * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
+
+    // k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
+    // k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t)^2))
 
     /// sets the energy of the pendulum
     /// changes the kinetic energy only

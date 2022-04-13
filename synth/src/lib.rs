@@ -106,15 +106,6 @@ fn lerp(from: f32, to: f32, mix: f32) -> f32 {
     from * (1. - mixclamp) + to * mixclamp
 }
 
-// wolfram alpha kinetic energy in terms for theta and canonical momenta
-// k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * p_2^2  -  2 * m_2 * l_1 * l_2 * p_1 * p_2 * cos(theta_1 - theta_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(theta_1 - theta_2)^2))
-
-// assume p_2 = p_1 * c
-// k = (m_2 * l_2^2 * p_1^2  +  (m_1 + m_2) * l_1^2 * (p_1 * c)^2  -  2 * m_2 * l_1 * l_2 * p_1 * (p_1 * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
-
-// k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
-// k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t)^2))
-
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
     let b = center_length / (1f32 + chaoticity / 2f32);
     let c = b * chaoticity;
@@ -297,20 +288,12 @@ impl SynthPlayer for Synth {
             );
         }
 
-        // TODO m?? is that mass?
-        //let m = vec2(1., 1.);
-        //let cm = (m.x - m.y) / m.y;
         // TODO make the lengths the same, and change the mass instead?
         // TODO is it perhaps only the first length that should be used to calculate the center of mass?
         // TODO figure this out
         let length = get_lengths(self.center_length, chaoticity);
         self.simulator.pendulum.length = length;
         // TODO recalculate the momenta depending on the chaoticity?
-
-        // if self.note_event.is_none() {
-        //     // TODO don't use friction. just set the momentum and theta for more control
-        //     self.pendulum.friction = release.powi(2);
-        // }
 
         // produce sound
         for frame in output.chunks_exact_mut(channels) {
