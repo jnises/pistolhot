@@ -5,18 +5,21 @@ TODO change friction to instead be some sort of energy dissipation
 TODO calculate length only using the first part of pendulum?
 */
 
+#[macro_use]
 mod dbg_gui;
 mod params_gui;
 mod pendulum;
+mod simulator;
 use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
 pub use dbg_gui::dbg_gui;
 use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
 pub use params_gui::params_gui;
 use pendulum::Pendulum;
+use simulator::Simulator;
+use static_assertions::const_assert;
 use std::{f32::consts::PI, ops::RangeInclusive, sync::Arc};
 use wmidi::MidiMessage;
-use static_assertions::const_assert;
 
 use crate::dbg_gui::dbg_value;
 
@@ -112,46 +115,6 @@ fn get_pendulum_x(pendulum: &Pendulum) -> f32 {
 // k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t_1 - t_2))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t_1 - t_2)^2))
 // k = (m_2 * l_2^2 * (p * d)^2  +  (m_1 + m_2) * l_1^2 * (p * c)^2  -  2 * m_2 * l_1 * l_2 * (p * d) * (p * c) * cos(t))  /  (2 * m_2 * l_1^2 * l_2^2 * (m_1 + m_2 * sin(t)^2))
 
-
-
-/// sets the energy of the pendulum
-/// changes the kinetic energy only
-fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
-    //let oldx = get_pendulum_x(pendulum);
-    let Pendulum {
-        g,
-        mass,
-        length,
-        ref mut t_pt,
-        ..
-    } = *pendulum;
-    let mass_sum = mass.x + mass.y;
-    let potential =
-        g * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
-    dbg_value!(potential);
-    // TODO this will override the simulation all the time right? that's not good.
-    // how to handle that better?
-    // can we calculate the energy more correctly?
-    // have some allowed energy range?
-    // lowpass the adjustment?
-    if energy > potential {
-        let kinetic = energy - potential;
-
-        let thetadiff = t_pt.x - t_pt.y;
-
-        // TODO handle t_pt.z == 0 better, 
-        let c = t_pt.w / (t_pt.z.signum() * t_pt.z.abs().max(f32::EPSILON));
-        let pdet = f32::sqrt(c.powi(2) * length.x.powi(2) * mass_sum - 2. * c * length.y * length.x * mass.y * thetadiff.cos() + length.y.powi(2) * mass.y);
-        let p = std::f32::consts::SQRT_2 * kinetic.sqrt() * length.x * length.y * mass.y.sqrt() * f32::sqrt(mass.y * thetadiff.sin().powi(2) + mass.x) / pdet;
-        dbg_value!(p);
-
-        t_pt.z = if p.is_sign_positive() != t_pt.z.is_sign_positive() { -p } else { p };
-        t_pt.w = c * t_pt.z;
-    } else if energy < f32::EPSILON {
-        *t_pt = Vec4::ZERO;
-    }
-}
-
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
     let b = center_length / (1f32 + chaoticity / 2f32);
     let c = b * chaoticity;
@@ -163,7 +126,7 @@ fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
 pub struct Synth {
     midi_events: MidiChannel,
 
-    pendulum: Pendulum,
+    simulator: Simulator,
     note_event: Option<NoteEvent>,
     params: Arc<Params>,
     lowpass: (u32, biquad::DirectForm1<f32>),
@@ -196,11 +159,14 @@ impl Synth {
                     .unwrap(),
                 ),
             ),
-            pendulum: Pendulum {
-                // higher gravity. for better precision. (is it really?)
-                g: 9.81f32 * 100000.,
-                mass: vec2(1., 1.),
-                ..Pendulum::default()
+            simulator: Simulator {
+                pendulum: Pendulum {
+                    // higher gravity. for better precision. (is it really?)
+                    g: 9.81f32 * 100000.,
+                    mass: vec2(1., 1.),
+                    ..Pendulum::default()
+                },
+                ..Simulator::default()
             },
             center_length: 1f32,
             sample_rate,
@@ -216,7 +182,7 @@ impl Synth {
             const VELOCITY_WEIGHT: f32 = 0.5;
             const_assert!(VELOCITY_WEIGHT >= 0. && VELOCITY_WEIGHT <= 2.);
             let length = get_lengths(self.center_length, self.params.chaoticity.load());
-            let Pendulum { g, mass, t_pt, .. } = self.pendulum;
+            let Pendulum { g, mass, t_pt, .. } = self.simulator.pendulum;
             let mass_sum = mass.x + mass.y;
             let desired_potential =
                 g * VELOCITY_WEIGHT * event.velocity * (mass_sum * length.x + mass.y * length.y);
@@ -275,14 +241,8 @@ impl SynthPlayer for Synth {
                     let norm_vel = (u8::from(velocity) - u8::from(wmidi::U7::MIN)) as f32
                         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32;
                     // TODO make g a constant
-                    let Pendulum {
-                        ref mut t_pt,
-                        ref mut mass,
-                        g,
-                        ..
-                    } = self.pendulum;
                     // TODO calculate length better. do a few components of the large amplitude equation
-                    self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
+                    self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * self.simulator.pendulum.g;
                     self.note_event = Some(NoteEvent {
                         note,
                         state: NoteState::Pressed(0),
@@ -334,7 +294,7 @@ impl SynthPlayer for Synth {
         // TODO is it perhaps only the first length that should be used to calculate the center of mass?
         // TODO figure this out
         let length = get_lengths(self.center_length, chaoticity);
-        self.pendulum.length = length;
+        self.simulator.pendulum.length = length;
         // TODO recalculate the momenta depending on the chaoticity?
 
         // if self.note_event.is_none() {
@@ -347,16 +307,17 @@ impl SynthPlayer for Synth {
             // TODO should this be done in the rk4 loop in the pendulum code instead?
             let energy = self.calculate_energy();
             dbg_value!(energy);
-            adjust_energy(&mut self.pendulum, energy);
-            let tip = get_pendulum_x(&self.pendulum);
-            let full_length = self.pendulum.length.x + self.pendulum.length.y;
+            self.simulator.adjust_energy(energy);
+            let tip = get_pendulum_x(&self.simulator.pendulum);
+            let full_length = self.simulator.pendulum.length.x + self.simulator.pendulum.length.y;
             let a = tip / full_length;
             let lowpassed = self.lowpass.1.run(a);
             let clipped = lowpassed.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
-            self.pendulum.update(1. / sample_rate as f32);
+            // TODO let the simulator handle its own update
+            self.simulator.update(1. / sample_rate as f32);
             if let Some(event) = &mut self.note_event {
                 event.state.update(1);
             }
