@@ -41,7 +41,7 @@ impl Simulator {
             let iterations = (*time_error / step_size).ceil() as usize;
             for _ in 0..iterations {
                 // TODO do the adsr stuff here
-                Self::adjust_energy(pendulum, energy);
+                Self::adjust_energy(pendulum, energy, p);
                 pendulum.update(step_size);
             }
             *time_error -= iterations as f32 * step_size;
@@ -59,7 +59,7 @@ impl Simulator {
 
     /// sets the energy of the pendulum
     /// changes the kinetic energy only
-    fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
+    fn adjust_energy(pendulum: &mut Pendulum, energy: f32, p: f32) {
         let Pendulum {
             g,
             mass,
@@ -76,7 +76,7 @@ impl Simulator {
         // can we calculate the energy more correctly?
         // have some allowed energy range?
         // lowpass the adjustment?
-        if energy > potential {
+        let new_t_pt = if energy > potential {
             let kinetic = energy - potential;
 
             let thetadiff = t_pt.x - t_pt.y;
@@ -88,23 +88,28 @@ impl Simulator {
                     - 2. * c * length.y * length.x * mass.y * thetadiff.cos()
                     + length.y.powi(2) * mass.y,
             );
-            let p = std::f32::consts::SQRT_2
+            let p_theta = std::f32::consts::SQRT_2
                 * kinetic.sqrt()
                 * length.x
                 * length.y
                 * mass.y.sqrt()
                 * f32::sqrt(mass.y * thetadiff.sin().powi(2) + mass.x)
                 / pdet;
-            dbg_value!(p);
+            dbg_value!(p_theta);
 
-            t_pt.z = if p.is_sign_positive() != t_pt.z.is_sign_positive() {
-                -p
+            let mut new_t_pt = *t_pt;
+            new_t_pt.z = if p_theta.is_sign_positive() != t_pt.z.is_sign_positive() {
+                -p_theta
             } else {
-                p
+                p_theta
             };
-            t_pt.w = c * t_pt.z;
+            new_t_pt.w = c * new_t_pt.z;
+            new_t_pt
         } else if energy < f32::EPSILON {
-            *t_pt = Vec4::ZERO;
-        }
+            Vec4::ZERO
+        } else {
+            *t_pt
+        };
+        *t_pt = t_pt.lerp(new_t_pt, p);
     }
 }

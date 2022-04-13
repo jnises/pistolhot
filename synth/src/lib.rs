@@ -23,6 +23,8 @@ use wmidi::MidiMessage;
 
 use crate::dbg_gui::dbg_value;
 
+const PARAM_DIV: f32 = 10000.;
+
 fn u7_to_f32(value: wmidi::U7) -> f32 {
     (u8::from(value) - u8::from(wmidi::U7::MIN)) as f32
         / (u8::from(wmidi::U7::MAX) - u8::from(wmidi::U7::MIN)) as f32
@@ -33,13 +35,14 @@ pub type MidiChannel = channel::Receiver<MidiMessage<'static>>;
 #[derive(Clone)]
 enum NoteState {
     Pressed(u32),
-    Released { pressed_time: u32, elapsed: u32 },
+    Released,
 }
 
 impl NoteState {
     fn update(&mut self, time: u32) {
         match self {
-            NoteState::Pressed(elapsed) | NoteState::Released { elapsed, .. } => *elapsed += time,
+            NoteState::Pressed(elapsed) => *elapsed += time,
+            _ => {}
         }
     }
 }
@@ -52,15 +55,17 @@ struct NoteEvent {
 }
 
 pub const CHAOTICITY_RANGE: RangeInclusive<f32> = 0.1f32..=1f32;
-pub const ATTACK_RANGE: RangeInclusive<f32> = 0f32..=10f32;
-pub const DECAY_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+pub const ATTACK_RANGE: RangeInclusive<f32> = 0f32..=1f32;
+pub const DECAY_DELAY_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+pub const DECAY_RANGE: RangeInclusive<f32> = 0f32..=1f32;
 pub const SUSTAIN_RANGE: RangeInclusive<f32> = 0f32..=1f32;
-pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=10f32;
+pub const RELEASE_RANGE: RangeInclusive<f32> = 0f32..=1f32;
 
 // TODO handle params using messages instead?
 pub struct Params {
     pub chaoticity: AtomicCell<f32>,
     pub attack: AtomicCell<f32>,
+    pub decay_delay: AtomicCell<f32>,
     pub decay: AtomicCell<f32>,
     pub sustain: AtomicCell<f32>,
     pub release: AtomicCell<f32>,
@@ -71,6 +76,12 @@ impl Params {
         self.attack
             .load()
             .clamp(*ATTACK_RANGE.start(), *ATTACK_RANGE.end())
+    }
+
+    fn get_decay_delay(&self) -> f32 {
+        self.decay_delay
+            .load()
+            .clamp(*DECAY_DELAY_RANGE.start(), *DECAY_DELAY_RANGE.end())
     }
 
     fn get_decay(&self) -> f32 {
@@ -93,11 +104,6 @@ impl Params {
 }
 
 const LOWPASS_FREQ: f32 = 10000f32;
-
-fn lerp(from: f32, to: f32, mix: f32) -> f32 {
-    let mixclamp = mix.clamp(0., 1.);
-    from * (1. - mixclamp) + to * mixclamp
-}
 
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
     let b = center_length / (1f32 + chaoticity / 2f32);
@@ -125,11 +131,12 @@ impl Synth {
             midi_events,
             note_event: None,
             params: Arc::new(Params {
-                chaoticity: 0.67f32.into(),
+                chaoticity: 0.5f32.into(),
                 attack: 0.1f32.into(),
-                decay: 0.5f32.into(),
+                decay_delay: 0.5f32.into(),
+                decay: 0.1f32.into(),
                 sustain: 0.5f32.into(),
-                release: 0.5f32.into(),
+                release: 0.1f32.into(),
             }),
             lowpass: (
                 0, //< to make sure it is recalculated
@@ -161,43 +168,42 @@ impl Synth {
         self.params.clone()
     }
 
-    fn calculate_energy(&self) -> f32 {
+    fn calculate_energy(&self) -> (f32, f32) {
         if let Some(event) = &self.note_event {
             const VELOCITY_WEIGHT: f32 = 0.5;
             const_assert!(VELOCITY_WEIGHT >= 0. && VELOCITY_WEIGHT <= 2.);
             let length = get_lengths(self.center_length, self.params.chaoticity.load());
-            let Pendulum { g, mass, t_pt, .. } = self.simulator.pendulum;
+            let Pendulum { g, mass, .. } = self.simulator.pendulum;
             let mass_sum = mass.x + mass.y;
             let desired_potential =
                 g * VELOCITY_WEIGHT * event.velocity * (mass_sum * length.x + mass.y * length.y);
             dbg_value!(desired_potential);
-            let pressed_time = match event.state {
-                NoteState::Pressed(elapsed) => elapsed,
-                NoteState::Released { pressed_time, .. } => pressed_time,
-            };
-            let pressed_seconds = pressed_time as f32 / self.sample_rate as f32;
-            let attack = self.params.get_attack();
-            let pressed_value = if pressed_seconds < attack {
-                pressed_seconds / attack
-            } else {
-                let remain = pressed_seconds - attack;
-                let decay = self.params.get_decay();
-                let a = remain / decay;
-                let sustain = self.params.get_sustain();
-                lerp(1., sustain, a)
-            };
-            let adsr = pressed_value
-                * match event.state {
-                    NoteState::Pressed(_) => 1.,
-                    NoteState::Released { elapsed, .. } => {
-                        let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
-                        let release = self.params.get_release().max(f32::EPSILON);
-                        lerp(1., 0., elapsed_seconds / release)
+            match event.state {
+                NoteState::Pressed(elapsed) => {
+                    let elapsed_seconds = elapsed as f32 / self.sample_rate as f32;
+                    dbg_value!(elapsed_seconds);
+                    dbg_value!(self.params.get_decay_delay());
+                    if elapsed_seconds < self.params.get_decay_delay() {
+                        dbg_value("state", 0.);
+                        let attack = 1. / (self.params.get_attack() * PARAM_DIV + 1.);
+                        dbg_value!(attack);
+                        (desired_potential, attack)
+                    } else {
+                        // TODO get the current energy here instead of desired_potential?
+                        dbg_value("state", 1.);
+                        (
+                            desired_potential * self.params.get_sustain(),
+                            1. / (self.params.get_decay() * PARAM_DIV + 1.)
+                        )
                     }
-                };
-            desired_potential * adsr
+                }
+                NoteState::Released => {
+                    dbg_value("state", 2.);
+                    (0., 1. / (self.params.get_release() * PARAM_DIV + 1.))
+                }
+            }
         } else {
-            0.
+            (0., 1. - self.params.get_release())
         }
     }
 }
@@ -239,11 +245,8 @@ impl SynthPlayer for Synth {
                     }) = self.note_event
                     {
                         if note == held_note {
-                            if let NoteState::Pressed(elapsed) = *state {
-                                *state = NoteState::Released {
-                                    pressed_time: elapsed,
-                                    elapsed: 0,
-                                };
+                            if let NoteState::Pressed(_) = *state {
+                                *state = NoteState::Released;
                             }
                         }
                     }
@@ -295,10 +298,8 @@ impl SynthPlayer for Synth {
                 *sample = clipped;
             }
 
-            // TODO should this be done in the rk4 loop in the pendulum code instead?
-            let energy = self.calculate_energy();
-            // TODO set the p
-            self.simulator.update(1. / sample_rate as f32, energy, 0.1);
+            let (energy, p) = self.calculate_energy();
+            self.simulator.update(1. / sample_rate as f32, energy, p);
             if let Some(event) = &mut self.note_event {
                 event.state.update(1);
             }
