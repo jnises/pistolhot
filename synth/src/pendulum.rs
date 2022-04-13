@@ -5,7 +5,6 @@ use std::f32::consts::PI;
 pub struct Pendulum {
     pub g: f32,
     pub step_size: f32,
-    pub friction: f32,
     // the mass of the pendulums
     pub mass: Vec2,
     // the length of the pendulums
@@ -20,7 +19,6 @@ impl Default for Pendulum {
         Self {
             g: 9.81,
             step_size: 1.0 / 44100.0,
-            friction: 0f32,
             mass: vec2(1f32, 1f32),
             length: vec2(1f32, 1f32),
             t_pt: Vec4::ZERO,
@@ -34,7 +32,6 @@ impl Pendulum {
         let Self {
             ref g,
             ref step_size,
-            ref friction,
             ref length,
             ref mass,
             t_pt,
@@ -73,12 +70,8 @@ impl Pendulum {
                             * length.y.powi(2)
                             * (mass.x + mass.y * f32::sin(theta.x - theta.y).powi(2)).powi(2))
                         * f32::sin(2. * (theta.x - theta.y));
-                    let mut dp0 = -(mass.x + mass.y) * g * length.x * f32::sin(theta.x) - c0 + c1;
-                    let mut dp1 = -mass.y * g * length.y * f32::sin(theta.y) + c0 - c1;
-                    // a naive friction. not physical at all
-                    // TODO there should at least be something about mass here right?
-                    dp0 -= dt0 * friction;
-                    dp1 -= dt1 * friction;
+                    let dp0 = -(mass.x + mass.y) * g * length.x * f32::sin(theta.x) - c0 + c1;
+                    let dp1 = -mass.y * g * length.y * f32::sin(theta.y) + c0 - c1;
                     const MAX_D: f32 = 999999f32;
                     vec4(
                         dt0.clamp(-MAX_D, MAX_D),

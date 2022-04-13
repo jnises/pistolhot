@@ -283,7 +283,6 @@ impl SynthPlayer for Synth {
                     } = self.pendulum;
                     // TODO calculate length better. do a few components of the large amplitude equation
                     self.center_length = (1f32 / note.to_freq_f32() / 2f32 / PI).powi(2) * g;
-                    self.pendulum.friction = 0f32;
                     self.note_event = Some(NoteEvent {
                         note,
                         state: NoteState::Pressed(0),
