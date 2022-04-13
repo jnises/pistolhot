@@ -42,13 +42,6 @@ impl NoteState {
             NoteState::Pressed(elapsed) | NoteState::Released { elapsed, .. } => *elapsed += time,
         }
     }
-
-    fn get_pressed_time(&self) -> u32 {
-        match *self {
-            NoteState::Pressed(time) => time,
-            NoteState::Released { pressed_time, .. } => pressed_time,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -297,17 +290,17 @@ impl SynthPlayer for Synth {
 
         // produce sound
         for frame in output.chunks_exact_mut(channels) {
-            // TODO should this be done in the rk4 loop in the pendulum code instead?
-            let energy = self.calculate_energy();
-            dbg_value!(energy);
-            self.simulator.adjust_energy(energy);
             let a = self.simulator.get_normalized_x();
             let lowpassed = self.lowpass.1.run(a);
             let clipped = lowpassed.clamp(-1f32, 1f32);
             for sample in frame.iter_mut() {
                 *sample = clipped;
             }
-            self.simulator.update(1. / sample_rate as f32);
+
+            // TODO should this be done in the rk4 loop in the pendulum code instead?
+            let energy = self.calculate_energy();
+            // TODO set the p
+            self.simulator.update(1. / sample_rate as f32, energy, 0.1);
             if let Some(event) = &mut self.note_event {
                 event.state.update(1);
             }

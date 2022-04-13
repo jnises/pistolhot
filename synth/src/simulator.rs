@@ -28,7 +28,9 @@ impl Simulator {
         tip / (pendulum.length.x + pendulum.length.y)
     }
 
-    pub fn update(&mut self, elapsed: f32) {
+    pub fn update(&mut self, elapsed: f32, energy: f32, p: f32) {
+        debug_assert!(energy >= 0.);
+        debug_assert!(p >= 0. && p <= 1.);
         let Self {
             ref mut pendulum,
             step_size,
@@ -39,6 +41,7 @@ impl Simulator {
             let iterations = (*time_error / step_size).ceil() as usize;
             for _ in 0..iterations {
                 // TODO do the adsr stuff here
+                Self::adjust_energy(pendulum, energy);
                 pendulum.update(step_size);
             }
             *time_error -= iterations as f32 * step_size;
@@ -56,15 +59,14 @@ impl Simulator {
 
     /// sets the energy of the pendulum
     /// changes the kinetic energy only
-    pub fn adjust_energy(&mut self, energy: f32) {
-        //let oldx = get_pendulum_x(pendulum);
+    fn adjust_energy(pendulum: &mut Pendulum, energy: f32) {
         let Pendulum {
             g,
             mass,
             length,
             ref mut t_pt,
             ..
-        } = self.pendulum;
+        } = *pendulum;
         let mass_sum = mass.x + mass.y;
         let potential = g
             * (mass_sum * length.x * (1. - t_pt.x.cos()) + mass.y * length.y * (1. - t_pt.y.cos()));
