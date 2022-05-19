@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "synth",
+    "app",
+    "standalone",
+    "vst",
+]
+exclude = ["wasm"]
+
+default-members = ["standalone"]

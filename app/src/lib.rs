@@ -6,8 +6,8 @@ mod timer;
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
-use synth::{self, Synth, params_gui, dbg_gui};
-use crate::{audio::AudioManager, synth::Params};
+use pistolhot_synth::{self, Synth, params_gui, dbg_gui};
+use crate::{audio::AudioManager, pistolhot_synth::Params};
 use cpal::traits::DeviceTrait;
 use crossbeam::channel;
 use eframe::{

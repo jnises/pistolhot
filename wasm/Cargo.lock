@@ -106,25 +106,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
 
 [[package]]
-name = "app"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "cfg-if 1.0.0",
- "chrono",
- "cpal",
- "crossbeam",
- "eframe 0.17.0",
- "log",
- "midir",
- "parking_lot 0.12.0",
- "ringbuf",
- "synth",
- "web-sys",
- "wmidi",
-]
-
-[[package]]
 name = "async-broadcast"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2009,11 +1990,42 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
-name = "pistolhot"
+name = "pistolhot-app"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "app",
+ "cfg-if 1.0.0",
+ "chrono",
+ "cpal",
+ "crossbeam",
+ "eframe 0.17.0",
+ "log",
+ "midir",
+ "parking_lot 0.12.0",
+ "pistolhot-synth",
+ "ringbuf",
+ "web-sys",
+ "wmidi",
+]
+
+[[package]]
+name = "pistolhot-synth"
+version = "0.0.1"
+dependencies = [
+ "biquad",
+ "crossbeam",
+ "egui 0.17.0",
+ "glam",
+ "once_cell",
+ "static_assertions",
+ "wmidi",
+]
+
+[[package]]
+name = "pistolhot-wasms"
+version = "0.0.1"
+dependencies = [
+ "anyhow",
  "cfg-if 1.0.0",
  "chrono",
  "console_error_panic_hook",
@@ -2025,6 +2037,7 @@ dependencies = [
  "log",
  "midir",
  "parking_lot 0.12.0",
+ "pistolhot-app",
  "ringbuf",
  "web-sys",
  "wmidi",
@@ -2368,19 +2381,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
-]
-
-[[package]]
-name = "synth"
-version = "0.0.1"
-dependencies = [
- "biquad",
- "crossbeam",
- "egui 0.17.0",
- "glam",
- "once_cell",
- "static_assertions",
- "wmidi",
 ]
 
 [[package]]

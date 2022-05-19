@@ -1,13 +1,13 @@
 [package]
 authors = ["joel nises <joel.nises@gmail.com>"]
 edition = "2021"
-name = "pistolhot"
+name = "pistolhot-standalone"
 version = "0.0.1"
 
 [dependencies]
 eframe = "0.17"
 env_logger = "0.9"
-app = { path = "../app" }
+pistolhot-app = { path = "../app" }
 
 [profile.release]
 #lto = true

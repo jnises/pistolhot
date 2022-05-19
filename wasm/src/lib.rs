@@ -6,6 +6,7 @@ if #[cfg(target_arch = "wasm32")] {
 
 use log::{warn, Level, Metadata, Record};
 use web_sys::console;
+use pistolhot_app as app;
 use app::Pistolhot;
 
 struct WebLogger;

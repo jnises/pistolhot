@@ -1,9 +1,10 @@
 use core::ffi::c_void;
 use egui_baseview::EguiWindow;
+use pistolhot_synth as synth;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::sync::Arc;
-use vst::editor::Editor;
 use synth::params_gui;
+use vst::editor::Editor;
 
 pub struct PistolhotEditor {
     window_handle: Option<baseview::WindowHandle>,
