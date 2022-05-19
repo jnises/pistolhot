@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use pistolhot_synth::SynthPlayer;
 use anyhow::{anyhow, Result};
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
@@ -9,6 +8,7 @@ use cpal::{
 };
 use crossbeam::atomic::AtomicCell;
 use log::warn;
+use pistolhot_synth::SynthPlayer;
 
 const NUM_CHANNELS: usize = 2;
 const VISUALIZATION_BUFFER_SIZE: usize = 0x10000;
