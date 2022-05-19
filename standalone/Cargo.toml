@@ -8,8 +8,3 @@ version = "0.0.1"
 eframe = "0.17"
 env_logger = "0.9"
 pistolhot-app = { path = "../app" }
-
-[profile.release]
-#lto = true
-#opt-level = 2
-

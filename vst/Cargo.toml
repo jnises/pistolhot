@@ -26,7 +26,3 @@ wmidi = "4.0.6"
 baseview = { git = "https://github.com/jnises/baseview.git", rev = "5b57af2463ef55c4ac702ef662c3472c328a3c6b", features = ["opengl"]  }
 egui = "0.17"
 egui-baseview = {git = "https://github.com/jnises/egui-baseview.git", rev = "d02bbe4759a6e818efbcf7c8b8c7e799b121d45a"}
-
-[profile.release]
-lto = true
-opt-level = 2
