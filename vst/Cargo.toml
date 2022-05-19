@@ -6,6 +6,7 @@ version = "0.0.1"
 
 [lib]
 crate-type = ["cdylib"]
+name = "pistolhot"
 
 [dependencies]
 backtrace = "0.3.64"
