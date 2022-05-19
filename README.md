@@ -1,19 +1,29 @@
 # Pistolhot
 
-Double pendulum synth
+Work in progress double pendulum synth
 
 ![screenshot](docs/screenshot.jpg)
 
 ## To build and run natively:
 ```
-cd standalone
-cargo run --release
+cargo run --release -p pistolhot-standalone
 ```
 
-## To build wasm version for web.
+## To build vst
 ```
-cd wasm
+cd vst
+# on windows
+cargo build
+# on mac
+cargo make mac_bundle_debug
+```
+Add the `vst` directory to your vst search path.
+
+## To build wasm version for web.
+> :warning: this target doesn't currently work
+```
 cargo install cargo-make
+cd wasm
 
 # option 1
 cargo make build_web
@@ -25,11 +35,3 @@ cargo make serve
 ```
  
 The open a browser (with webmidi support) and point it to http://localhost:8000
-
-## To build vst
-```
-cd vst
-# on windows
-cargo build
-# on mac
-cargo make mac_bundle_debug

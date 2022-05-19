@@ -1,6 +1,6 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
-use app::Pistolhot;
+use pistolhot_app::Pistolhot;
 
 fn main() {
     use eframe::{egui::Vec2, epi};

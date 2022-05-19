@@ -1,11 +1,11 @@
 [package]
 authors = ["joel nises <joel.nises@gmail.com>"]
 edition = "2021"
-name = "app"
+name = "pistolhot-app"
 version = "0.0.1"
 
 [dependencies]
-synth = { path = "../synth" }
+pistolhot-synth = { path = "../synth" }
 anyhow = "1.0"
 cfg-if = "1.0"
 chrono = "0.4"
@@ -19,7 +19,4 @@ ringbuf = "0.2"
 wmidi = "4.0"
 web-sys = {version = "0.3", features = ["console", "Window"]}
 
-[profile.release]
-lto = true
-opt-level = 2
 

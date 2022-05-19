@@ -1,11 +1,12 @@
 [package]
 authors = ["joel nises <joel.nises@gmail.com>"]
 edition = "2021"
-name = "pistolhot"
+name = "pistolhot-vst"
 version = "0.0.1"
 
 [lib]
 crate-type = ["cdylib"]
+name = "pistolhot"
 
 [dependencies]
 backtrace = "0.3.64"
@@ -18,7 +19,7 @@ log-panics = {version = "2.0.0", features = ["with-backtrace"]}
 msgbox = "0.7"
 once_cell = "1.9.0"
 raw-window-handle = "0.4.2"
-synth = {path = "../synth"}
+pistolhot-synth = {path = "../synth"}
 vst = "0.3"
 wmidi = "4.0.6"
 # need patches for egui 0.17
@@ -26,7 +27,3 @@ wmidi = "4.0.6"
 baseview = { git = "https://github.com/jnises/baseview.git", rev = "5b57af2463ef55c4ac702ef662c3472c328a3c6b", features = ["opengl"]  }
 egui = "0.17"
 egui-baseview = {git = "https://github.com/jnises/egui-baseview.git", rev = "d02bbe4759a6e818efbcf7c8b8c7e799b121d45a"}
-
-[profile.release]
-lto = true
-opt-level = 2

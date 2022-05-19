@@ -1,13 +1,12 @@
+mod audio;
 mod keyboard;
 mod midi;
 mod periodic_updater;
-mod audio;
 mod timer;
 use crate::keyboard::OnScreenKeyboard;
 use crate::midi::MidiReader;
 use crate::periodic_updater::PeriodicUpdater;
-use synth::{self, Synth, params_gui, dbg_gui};
-use crate::{audio::AudioManager, synth::Params};
+use crate::{audio::AudioManager, pistolhot_synth::Params};
 use cpal::traits::DeviceTrait;
 use crossbeam::channel;
 use eframe::{
@@ -16,6 +15,7 @@ use eframe::{
 };
 use log::warn;
 use parking_lot::Mutex;
+use pistolhot_synth::{self, dbg_gui, params_gui, Synth};
 use std::{collections::VecDeque, sync::Arc};
 
 const NAME: &str = "Pistolhot";
@@ -181,7 +181,7 @@ impl App for Pistolhot {
                         });
 
                         let mut prev = None;
-                        let mut it = left_vis_buffer.iter().copied();//.rev();
+                        let mut it = left_vis_buffer.iter().copied(); //.rev();
                         it.nth(VIS_SIZE / 2 - 1);
                         for value in &mut it {
                             if let Some(prev) = prev {

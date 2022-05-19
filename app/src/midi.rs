@@ -4,7 +4,10 @@ use chrono::Duration;
 use crossbeam::channel;
 use log::{error, warn};
 use midir::{MidiInput, MidiInputConnection};
-use std::{convert::TryFrom, sync::{Arc, Mutex}};
+use std::{
+    convert::TryFrom,
+    sync::{Arc, Mutex},
+};
 use wmidi::MidiMessage;
 
 type MidiSender = channel::Sender<MidiMessage<'static>>;
@@ -69,6 +72,11 @@ impl MidiReader {
     }
 
     pub fn get_name(&self) -> String {
-        self.port.lock().unwrap().as_ref().map(|(_, name)| name.clone()).unwrap_or("-".to_string())
+        self.port
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|(_, name)| name.clone())
+            .unwrap_or("-".to_string())
     }
 }

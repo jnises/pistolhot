@@ -1,0 +1,14 @@
+[workspace]
+
+members = [
+    "synth",
+    "app",
+    "standalone",
+    "vst",
+]
+exclude = ["wasm"]
+default-members = ["standalone"]
+
+[profile.release]
+lto = true
+opt-level = 2

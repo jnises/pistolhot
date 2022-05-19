@@ -6,6 +6,7 @@ use std::sync::Arc;
 use crossbeam::atomic::AtomicCell;
 use log::info;
 use once_cell::sync::OnceCell;
+use pistolhot_synth as synth;
 use synth::SynthPlayer;
 use vst::{
     editor::Editor,

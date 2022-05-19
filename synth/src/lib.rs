@@ -193,7 +193,7 @@ impl Synth {
                         dbg_value("state", 1.);
                         (
                             desired_potential * self.params.get_sustain(),
-                            1. / (self.params.get_decay() * PARAM_DIV + 1.)
+                            1. / (self.params.get_decay() * PARAM_DIV + 1.),
                         )
                     }
                 }
