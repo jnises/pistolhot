@@ -37,7 +37,7 @@ impl Editor for PistolhotEditor {
         if self.window_handle.is_some() {
             return false;
         }
-        assert!(parent != std::ptr::null_mut());
+        assert!(!parent.is_null());
         let settings = baseview::WindowOpenOptions {
             title: "Pistolhot".to_string(),
             size: baseview::Size::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64),
@@ -53,7 +53,7 @@ impl Editor for PistolhotEditor {
             |_ctx: &egui::Context, _queue: &mut egui_baseview::Queue, _state: &mut ()| {},
             // update
             move |egui_ctx: &egui::Context, _queue: &mut egui_baseview::Queue, _state: &mut ()| {
-                egui::CentralPanel::default().show(&egui_ctx, |ui| {
+                egui::CentralPanel::default().show(egui_ctx, |ui| {
                     ui.heading("Pistolhot");
                     ui.group(|ui| {
                         params_gui(ui, &params);

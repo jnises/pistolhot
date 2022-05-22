@@ -23,6 +23,7 @@ struct Data {
     midi_sender: crossbeam::channel::Sender<wmidi::MidiMessage<'static>>,
 }
 
+#[derive(Default)]
 struct PistolhotVst(Option<Data>);
 
 impl PistolhotVst {
@@ -98,17 +99,14 @@ impl Plugin for PistolhotVst {
     fn process_events(&mut self, events: &vst::api::Events) {
         let sender = &mut self.get_mut_data().midi_sender;
         for e in events.events() {
-            match e {
-                vst::event::Event::Midi(me) => {
-                    // TODO don't unwrap. log
-                    if let Some(m) = wmidi::MidiMessage::try_from(&me.data[..])
-                        .unwrap()
-                        .drop_unowned_sysex()
-                    {
-                        sender.send(m).unwrap();
-                    }
+            if let vst::event::Event::Midi(me) = e {
+                // TODO don't unwrap. log
+                if let Some(m) = wmidi::MidiMessage::try_from(&me.data[..])
+                    .unwrap()
+                    .drop_unowned_sysex()
+                {
+                    sender.send(m).unwrap();
                 }
-                _ => {}
             }
         }
     }
@@ -140,12 +138,6 @@ impl Plugin for PistolhotVst {
         let data = self.get_mut_data();
         let editor = PistolhotEditor::new(data.synth.get_params());
         Some(Box::new(editor))
-    }
-}
-
-impl Default for PistolhotVst {
-    fn default() -> Self {
-        Self(None)
     }
 }
 
