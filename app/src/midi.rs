@@ -32,7 +32,7 @@ impl MidiReader {
     fn init(self: &Arc<Self>) {
         debug_assert!(self.port.lock().unwrap().is_none());
         let r = (|| -> Result<()> {
-            let midi = MidiInput::new("wayfarer")?;
+            let midi = MidiInput::new("pistolhot")?;
             let ports = midi.ports();
             Ok(if let Some(port) = ports.first() {
                 let name = midi.port_name(port)?;

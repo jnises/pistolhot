@@ -30,7 +30,7 @@ impl Simulator {
 
     pub fn update(&mut self, elapsed: f32, energy: f32, p: f32) {
         debug_assert!(energy >= 0.);
-        debug_assert!(p >= 0. && p <= 1.);
+        debug_assert!((0. ..=1.).contains(&p));
         let Self {
             ref mut pendulum,
             step_size,
