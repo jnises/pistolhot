@@ -13,7 +13,6 @@ use eframe::{
     egui::{self, emath, epaint, pos2, vec2, Color32, Rect, Stroke},
     epi::{self, App},
 };
-use log::warn;
 use parking_lot::Mutex;
 use pistolhot_synth::{self, dbg_gui, params_gui, Synth};
 use std::{collections::VecDeque, sync::Arc};
@@ -24,8 +23,6 @@ const VIS_SIZE: usize = 512;
 pub struct Data {
     audio: AudioManager<Synth>,
     midi: Arc<MidiReader>,
-    status_text: Arc<Mutex<String>>,
-    status_clone: Arc<Mutex<String>>,
     keyboard: OnScreenKeyboard,
     forced_buffer_size: Option<u32>,
     left_vis_buffer: VecDeque<f32>,
@@ -54,8 +51,6 @@ impl Pistolhot {
         *self = Self::Initialized(Data {
             audio,
             midi,
-            status_clone: status_text.clone(),
-            status_text,
             keyboard: OnScreenKeyboard::new(midi_tx),
             forced_buffer_size: None,
             left_vis_buffer: VecDeque::with_capacity(VIS_SIZE * 2),
@@ -108,7 +103,6 @@ impl App for Pistolhot {
                     let midi = &data.midi;
                     let left_vis_buffer = &mut data.left_vis_buffer;
                     let forced_buffer_size = &mut data.forced_buffer_size;
-                    let status_text = &data.status_text;
                     let keyboard = &mut data.keyboard;
                     let params = data.synth_params.as_ref();
                     ui.group(|ui| {
@@ -209,7 +203,6 @@ impl App for Pistolhot {
                         if left_vis_buffer.len() > VIS_SIZE {
                             drop(left_vis_buffer.drain(0..left_vis_buffer.len() - VIS_SIZE));
                         }
-                        ui.label(&*status_text.lock());
                     });
                     ui.group(|ui| {
                         params_gui(ui, &params);
