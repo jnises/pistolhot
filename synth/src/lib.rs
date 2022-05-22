@@ -13,7 +13,7 @@ mod simulator;
 use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
 pub use dbg_gui::dbg_gui;
-use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
+use glam::{vec2, Vec2};
 pub use params_gui::params_gui;
 use pendulum::Pendulum;
 use simulator::Simulator;
@@ -40,9 +40,8 @@ enum NoteState {
 
 impl NoteState {
     fn update(&mut self, time: u32) {
-        match self {
-            NoteState::Pressed(elapsed) => *elapsed += time,
-            _ => {}
+        if let NoteState::Pressed(elapsed) = self {
+            *elapsed += time;
         }
     }
 }
@@ -108,8 +107,7 @@ const LOWPASS_FREQ: f32 = 10000f32;
 fn get_lengths(center_length: f32, chaoticity: f32) -> Vec2 {
     let b = center_length / (1f32 + chaoticity / 2f32);
     let c = b * chaoticity;
-    let length = vec2(b, c);
-    length
+    vec2(b, c)
 }
 
 #[derive(Clone)]

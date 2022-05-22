@@ -6,7 +6,7 @@ fn main() {
     use eframe::{egui::Vec2, epi};
 
     env_logger::init();
-    let app = Box::new(Pistolhot::new());
+    let app = Box::new(Pistolhot::default());
     eframe::run_native(
         app,
         epi::NativeOptions {

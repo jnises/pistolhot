@@ -32,9 +32,9 @@ impl MidiReader {
     fn init(self: &Arc<Self>) {
         debug_assert!(self.port.lock().unwrap().is_none());
         let r = (|| -> Result<()> {
-            let midi = MidiInput::new("wayfarer")?;
+            let midi = MidiInput::new("pistolhot")?;
             let ports = midi.ports();
-            Ok(if let Some(port) = ports.first() {
+            if let Some(port) = ports.first() {
                 let name = midi.port_name(port)?;
                 let midi_events = self.midi_events.clone();
                 let connection = midi
@@ -57,11 +57,12 @@ impl MidiReader {
                 *self.port.lock().unwrap() = Some((connection, name));
             } else {
                 bail!("no midi so far");
-            })
+            }
+            Ok(())
         })();
         if let Err(e) = r {
             warn!("error setting up midi: {}. retrying", e);
-            let weak_self = Arc::downgrade(&self);
+            let weak_self = Arc::downgrade(self);
             self.timer
                 .schedule_with_delay(&Duration::seconds(1), move || {
                     if let Some(s) = weak_self.upgrade() {
@@ -77,6 +78,6 @@ impl MidiReader {
             .unwrap()
             .as_ref()
             .map(|(_, name)| name.clone())
-            .unwrap_or("-".to_string())
+            .unwrap_or_else(|| "-".to_string())
     }
 }
