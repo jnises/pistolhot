@@ -20,7 +20,6 @@ cargo make mac_bundle_debug
 Add the `vst` directory to your vst search path.
 
 ## To build wasm version for web.
-> :warning: this target doesn't currently work
 ```
 cargo install cargo-make
 cd wasm
