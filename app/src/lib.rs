@@ -13,7 +13,7 @@ use eframe::{
     egui::{self, emath, epaint, pos2, vec2, Color32, Rect, Stroke},
     epi::{self, App},
 };
-use parking_lot::Mutex;
+use log::warn;
 use pistolhot_synth::{self, dbg_gui, params_gui, Synth};
 use std::{collections::VecDeque, sync::Arc};
 
@@ -30,6 +30,7 @@ pub struct Data {
     periodic_updater: Option<PeriodicUpdater>,
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum Pistolhot {
     Initialized(Data),
     Uninitialized,
@@ -42,10 +43,8 @@ impl Pistolhot {
 
         let mut synth = Some(Synth::new(midi_rx));
         let synth_params = synth.as_ref().unwrap().get_params();
-        let status_text = Arc::new(Mutex::new("".to_string()));
-        let status_clone = status_text.clone();
         let audio = AudioManager::new(synth.take().unwrap(), move |e| {
-            *status_clone.lock() = e;
+            warn!("{e}");
         });
         *self = Self::Initialized(Data {
             audio,
@@ -57,8 +56,10 @@ impl Pistolhot {
             periodic_updater: None,
         });
     }
+}
 
-    pub fn new() -> Self {
+impl Default for Pistolhot {
+    fn default() -> Self {
         let mut s = Self::Uninitialized;
         // need to defer initializion in wasm due to chrome's autoplay blocking and such
         if cfg!(not(target_arch = "wasm32")) {
@@ -203,7 +204,7 @@ impl App for Pistolhot {
                         }
                     });
                     ui.group(|ui| {
-                        params_gui(ui, &params);
+                        params_gui(ui, params);
                     });
                     ui.group(|ui| {
                         dbg_gui(ui);

@@ -35,7 +35,7 @@ cfg_if::cfg_if! {
             }
 
             pub fn schedule_with_delay<T: Fn() + Send + 'static>(&self, delay: &Duration, callback: T) {
-                let d2 = delay.clone();
+                let d2 = *delay;
                 thread::spawn(move || {
                     thread::sleep(d2.to_std().unwrap());
                     callback();
