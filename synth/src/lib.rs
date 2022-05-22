@@ -13,7 +13,7 @@ mod simulator;
 use biquad::{Biquad, ToHertz};
 use crossbeam::{atomic::AtomicCell, channel};
 pub use dbg_gui::dbg_gui;
-use glam::{vec2, vec4, Vec2, Vec4, Vec4Swizzles};
+use glam::{vec2, Vec2};
 pub use params_gui::params_gui;
 use pendulum::Pendulum;
 use simulator::Simulator;

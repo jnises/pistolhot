@@ -1,11 +1,6 @@
-use std::{collections::HashMap, ops::RangeInclusive, sync::Mutex};
-
-use crossbeam::atomic::AtomicCell;
 use egui::Ui;
-
-use crate::{Params, ATTACK_RANGE, CHAOTICITY_RANGE, DECAY_RANGE, RELEASE_RANGE, SUSTAIN_RANGE};
-
 use once_cell::sync::Lazy;
+use std::{collections::HashMap, sync::Mutex};
 
 #[cfg(debug_assertions)]
 static DBG_VALUES: Lazy<Mutex<HashMap<&'static str, f32>>> =

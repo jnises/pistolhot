@@ -26,7 +26,6 @@ pub struct Data {
     keyboard: OnScreenKeyboard,
     forced_buffer_size: Option<u32>,
     left_vis_buffer: VecDeque<f32>,
-    synth: Option<Synth>,
     synth_params: Arc<Params>,
     periodic_updater: Option<PeriodicUpdater>,
 }
@@ -54,7 +53,6 @@ impl Pistolhot {
             keyboard: OnScreenKeyboard::new(midi_tx),
             forced_buffer_size: None,
             left_vis_buffer: VecDeque::with_capacity(VIS_SIZE * 2),
-            synth,
             synth_params,
             periodic_updater: None,
         });
