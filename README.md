@@ -2,7 +2,7 @@
 
 Work in progress double pendulum synth
 
-![screenshot](docs/screenshot.jpg)
+![screenshot](docs/screenshot.webp)
 
 ## To build and run natively:
 ```
