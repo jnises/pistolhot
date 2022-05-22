@@ -42,7 +42,7 @@ macro_rules! dbg_value {
     //     $crate::eprintln!("[{}:{}]", $crate::file!(), $crate::line!())
     // };
     ($val:expr $(,)?) => {
-        tmp
+        $val
     };
     ($($val:expr),+ $(,)?) => {
         ($($crate::dbg_value!($val)),+,)
