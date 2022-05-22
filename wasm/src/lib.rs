@@ -40,7 +40,7 @@ pub fn start(canvas_id: &str) -> Result<(), eframe::wasm_bindgen::JsValue> {
     console_error_panic_hook::set_once();
     log::set_logger(&LOGGER).expect("unable to set logger");
     log::set_max_level(log::LevelFilter::Info);
-    let app = Pistolhot::new();
+    let app = Pistolhot::default();
     eframe::start_web(canvas_id, Box::new(app))
 }
 }}

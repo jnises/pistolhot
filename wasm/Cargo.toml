@@ -16,7 +16,7 @@ chrono = "0.4"
 console_error_panic_hook = "0.1"
 cpal = {version = "0.13", features = ["wasm-bindgen"]}
 crossbeam = "0.8"
-eframe = "0.16"
+eframe = "0.17"
 env_logger = "0.9"
 glam = "0.20"
 log = "0.4"

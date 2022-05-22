@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  
 <head>
     <title>Pistolhot</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="white">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#404040">
     <style>
         html {
             /* Remove touch delay: */
@@ -88,17 +90,6 @@
         }
     </style>
     <link rel="manifest" href="./manifest.json">
-    <script>
-        // register ServiceWorker
-        window.onload = () => {
-            'use strict';
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker
-                    .register('./sw.js');
-            }
-        }
-    </script>
 </head>
 
 <body>

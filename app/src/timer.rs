@@ -1,5 +1,3 @@
-use std::thread;
-
 use chrono::Duration;
 
 // util to be able to set timers on both wasm and native targets
@@ -27,6 +25,7 @@ cfg_if::cfg_if! {
             }
         }
     } else {
+        use std::thread;
         // TODO use a proper timer implementation instead. use the Timer crate?
         pub struct Timer;
         impl Timer {
