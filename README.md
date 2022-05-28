@@ -25,7 +25,7 @@ cargo install cargo-make
 cd wasm
 
 # option 1
-cargo make build_web
+cargo make build_web_release
 # option 2
 cargo make watch
 
