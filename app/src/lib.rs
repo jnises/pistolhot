@@ -206,9 +206,11 @@ impl App for Pistolhot {
                     ui.group(|ui| {
                         params_gui(ui, params);
                     });
-                    ui.group(|ui| {
-                        dbg_gui(ui);
-                    });
+                    if cfg!(debug_assertions) {
+                        ui.group(|ui| {
+                            dbg_gui(ui);
+                        });
+                    }
                     // put onscreen keyboard at bottom of window
                     let height = ui.available_size().y;
                     ui.add_space(height - 20f32);
